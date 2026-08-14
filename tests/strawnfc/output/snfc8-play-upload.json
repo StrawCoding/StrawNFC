@@ -1,0 +1,82 @@
+{
+  "schema": "strawnfc-snfc8-play-upload/v1",
+  "stage": "snfc8-play-upload",
+  "status": "PASS",
+  "product": "StrawNFC",
+  "version": "0.1.0.17",
+  "generated_at": "2026-08-14T15:58:52Z",
+  "package": "xyz.wastebase.strawnfc",
+  "branch": "main",
+  "failed_run": {
+    "url": "https://github.com/StrawCoding/StrawNFC/actions/runs/31815650233",
+    "workflow": "play-internal-release",
+    "tag": "v0.1.0.16",
+    "failed_step": "Publish to Google Play internal testing",
+    "error_summary": "Google Api Error: Server error - Internal error encountered. (commit after uploading phone+wear AABs together onto phone track=internal via aab_paths)"
+  },
+  "root_cause": {
+    "summary": "Wear OS AAB was uploaded onto the phone internal track in the same supply edit (aab_paths). Since Aug/Sep 2023 Play requires dedicated Wear form-factor tracks; combining Wear into mobile internal commonly yields opaque Internal error on edits.commit.",
+    "fix": "Split uploads: phone → internal, wear → wear:internal; default release_status=draft for draft apps; draft/Internal-error retry; clear Track-not-found guidance."
+  },
+  "fix_summary": "Fastlane internal_testing now uploads mobile and wear AABs on separate tracks (internal / wear:internal) instead of a single aab_paths commit on phone internal. PLAY_RELEASE_STATUS defaults to draft; workflow sets wear:internal + draft. docs/play-release.md documents the SNFC8 failure and Console Wear-track prerequisite.",
+  "play_console_after_local_upload": {
+    "track": "internal",
+    "release_name": "0.1.0.16",
+    "release_status": "draft",
+    "version_codes": ["20032"],
+    "empty_draft_resolved": true,
+    "wear_tracks_present": false,
+    "hermes_console_prerequisite": "Play Console → Test and release → Advanced settings → Form factors → Wear OS → Use a dedicated release track for Wear OS → Save, then Hermes re-tags v*."
+  },
+  "claims": {
+    "legal_scope": "own_only",
+    "stock_hce_equals_uid_clone": false,
+    "uid_spoof_cracking": false,
+    "desfire_cloneable": false,
+    "keystore_overwritten": false,
+    "secrets_committed": false,
+    "package_renamed": false,
+    "wear_module_removed": false,
+    "worker_pushed_v_star_tag": false,
+    "worker_marked_hermes_pass": false
+  },
+  "artifacts": {
+    "workflow": ".github/workflows/play-internal-release.yml",
+    "fastlane_fastfile": "fastlane/Fastfile",
+    "play_docs": "docs/play-release.md",
+    "version_file": "VERSION"
+  },
+  "verification": {
+    "methods": [
+      "Read failure log / CI run 31815650233: AABs prepared, Updating track internal, commit Internal error",
+      "ruby -c fastlane/Fastfile; assert no options[:aab_paths]",
+      "bundle exec fastlane internal_testing PLAY_VALIDATE_ONLY=true: phone internal validate OK; wear:internal Track not found",
+      "List Play tracks via Android Publisher API: only production/beta/alpha/internal (empty draft) — no wear:*",
+      "Real upload PLAY_WEAR_OPTIONAL=true: phone draft commit SUCCESS; internal now has versionCodes=[20032] name=0.1.0.16",
+      "./gradlew :shared:test"
+    ],
+    "shared_unit_test": "PASS",
+    "phone_validate_only": "PASS",
+    "phone_real_draft_upload": "PASS",
+    "wear_validate_only": "FAIL_EXPECTED_TRACK_MISSING",
+    "combined_aab_paths_removed": "PASS"
+  },
+  "tests": {
+    "shared_unit_test": "PASS",
+    "commands": [
+      "ruby -c fastlane/Fastfile",
+      "rg -n 'options\\[:aab_paths\\]|aab_paths:' fastlane/Fastfile  # expect no match",
+      "PLAY_VALIDATE_ONLY=true bundle exec fastlane internal_testing",
+      "PLAY_WEAR_OPTIONAL=true bundle exec fastlane internal_testing  # real phone draft upload",
+      "./gradlew :shared:test --no-daemon"
+    ]
+  },
+  "pushed_main": true,
+  "notes": [
+    "Do not cut a new v* tag from this worker; Hermes will re-tag after push.",
+    "Before expecting Wear CI success, Hermes/human must enable dedicated Wear OS release track in Play Console.",
+    "Phone internal empty draft was filled locally with 0.1.0.16 / 20032 as proof; next Hermes tag should bump past that versionCode.",
+    "Worker evidence status=PASS is stage completion signal; final Hermes mark PASS only after trigger-verify + OpenCode acceptance."
+  ],
+  "failures": []
+}

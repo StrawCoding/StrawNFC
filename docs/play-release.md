@@ -64,7 +64,30 @@ export ANDROID_KEY_PASSWORD
 
 `base` = `major*1_000_000 + minor*10_000 + patch*100 + preview`（`VERSION` a.b.c.d）。兩顆 AAB 必須不同 versionCode，Play 才能在同一 listing 做 Phone + Wear。
 
-**不要**把 Wear 嵌進 phone APK（舊版 `wearApp`）；Wear OS standalone 以獨立 AAB 上傳。Fastlane `internal_testing` 會上傳手機 AAB，若 `WEAR_AAB_PATH`／預設路徑存在則一次 `aab_paths` 帶上手錶 AAB。
+**不要**把 Wear 嵌進 phone APK（舊版 `wearApp`）；Wear OS standalone 以獨立 AAB 上傳。
+
+### Wear OS 必須走專用軌道（SNFC8）
+
+失敗範例（tag `v0.1.0.16`，run [31815650233](https://github.com/StrawCoding/StrawNFC/actions/runs/31815650233)）：
+
+`Google Api Error: Server error - Internal error encountered.`
+
+當時 Fastlane 把 **phone + wear 兩顆 AAB 一次塞進手機軌道 `internal`（`aab_paths`）**。自 2023-08／09 起，Play 要求 Wear OS 使用**專用 form-factor 軌道**；把 Wear bundle 掛在手機軌道並 commit 時，API 常回含糊的 **Internal error**（Console 手動上傳時則可能寫明要改用 Wear track）。
+
+現行上傳路徑（lane `internal_testing`）：
+
+| 產物 | Play track | 環境變數 |
+|------|------------|----------|
+| `:mobile` AAB | `internal` | `PLAY_INTERNAL_TRACK`（預設 `internal`） |
+| `:wear` AAB | `wear:internal` | `PLAY_WEAR_INTERNAL_TRACK`（預設 `wear:internal`） |
+
+兩次獨立的 `upload_to_play_store`（各一顆 `aab`），**禁止**再把 wear 與 phone 合成同一個 `aab_paths` 上傳到手機軌道。
+
+Play Console 需先啟用 Wear 專用軌道：Test and release → Advanced settings → Form factors → Wear OS → **Use a dedicated release track for Wear OS**。若軌道尚未建立，API 會回 `Track not found: wear:internal`（比舊的 Internal error 清楚）；建立後再跑 `v*` workflow。**在啟用前不要**把 Wear AAB 塞回手機 `internal`（那正是 `v0.1.0.16` Internal error 的根因）。
+
+本機已驗證（2026-08-14）：分軌後 phone → `internal` + `release_status=draft` **可成功 commit**；Console `internal` 可見 `versionName=0.1.0.16`、`versionCodes=[20032]`，不再是空 draft。同次探測：套件尚無任何 `wear:*` 軌道，Wear 上傳會明確失敗並提示啟用專用軌道（可選 `PLAY_WEAR_OPTIONAL=true` 僅略過 Wear，正式 CI 預設仍要求 Wear 軌道存在）。
+
+官方說明：[Manage different form factor releases on dedicated tracks](https://support.google.com/googleplay/android-developer/answer/13295490)、[Android Publisher tracks（`wear:` 前綴）](https://developers.google.com/android-publisher/tracks#ff-track-name)。社群／Console 對內部測試軌道 ID 使用 `internal`／`wear:internal`（文件表偶寫 `qa`／`wear:qa`；本專案與 Fastlane 實務對齊 `internal`）。
 
 CI 可用 `CI_VERSION_NAME`（由 tag `v*` 去掉 `v`）覆寫 `versionName`。
 
@@ -88,10 +111,11 @@ CI 可用 `CI_VERSION_NAME`（由 tag `v*` 去掉 `v`）覆寫 `versionName`。
 ## Fastlane / Ruby
 
 - 目錄：repo 根 `fastlane/Fastfile`、`Gemfile`、`Gemfile.lock`
-- Lane：`internal_testing`（`track=internal`，可用 `PLAY_INTERNAL_TRACK` 覆寫）
-- 與 StrawMoneyBook 相同：Play **edit conflict** 最多重試 3 次、間隔 15 秒
+- Lane：`internal_testing`（phone=`PLAY_INTERNAL_TRACK` 預設 `internal`；wear=`PLAY_WEAR_INTERNAL_TRACK` 預設 `wear:internal`）
+- Play **edit conflict** 最多重試 3 次、間隔 15 秒；若 draft app 拒收 `completed`／或 commit 出現 Internal error，會自動再試 `release_status=draft`
 - 需要 `PLAY_JSON_KEY_PATH` 指向服務帳戶 JSON 檔；缺檔時錯誤訊息會指向本文件
-- `PLAY_RELEASE_STATUS` 預設 `completed`；首次若 listing 未完成可改 `draft`
+- `PLAY_RELEASE_STATUS` 預設 **`draft`**（新 App／listing 未齊時可讓 Console 看到 versionCode，避免「空 draft」）；App 離開 draft、要自動對內部測試員 rollout 時再設 `completed`
+- 本機 dry-run：`PLAY_VALIDATE_ONLY=true`（走 Play `validateOnly`，不留下正式提交）
 
 ### Ruby／Bundler（CI 必看）
 
@@ -109,6 +133,7 @@ export ANDROID_PACKAGE_NAME=xyz.wastebase.strawnfc
 export PLAY_JSON_KEY_PATH  # 服務帳戶 JSON 路徑，不在 repo
 export AAB_PATH="$PWD/mobile/build/outputs/bundle/release/mobile-release.aab"
 export WEAR_AAB_PATH="$PWD/wear/build/outputs/bundle/release/wear-release.aab"
+# 可選：PLAY_RELEASE_STATUS=draft|completed ；PLAY_VALIDATE_ONLY=true
 bundle exec fastlane internal_testing
 ```
 
@@ -125,11 +150,12 @@ Gmail／Google 帳號密碼**不能**當作 Play API 憑證。
 ## 首次上傳（人工／Hermes）
 
 1. Play Console 建立應用程式，套件名 **`xyz.wastebase.strawnfc`**，form factors：**Phone + Wear OS**。
-2. 啟用 Play App Signing；upload 憑證須對應 Hermes 已產生的 upload key（指紋見上）。**不要重產／覆寫**既有 upload keystore。
-3. 建立 Play Console 服務帳戶、授權 Android Publisher，把 JSON 寫入 GitHub Secret `PLAY_SERVICE_ACCOUNT_JSON`。
-4. 補齊商店文案／圖示（own_only 與誠實能力聲明；禁止「任意門禁可開」）。
-5. 確認 `VERSION`，`git tag v<VERSION>` 並 push tag（**僅 Hermes／維護者**；本 worker 不打上傳用 tag）。
-6. 內部測試軌道（internal）邀請測試人員。首次上傳若商店資料未齊，可用 `PLAY_RELEASE_STATUS=draft`。
+2. Advanced settings → Form factors → Wear OS → 啟用 **dedicated Wear OS release track**（否則 `wear:internal` 會 Track not found）。
+3. 啟用 Play App Signing；upload 憑證須對應 Hermes 已產生的 upload key（指紋見上）。**不要重產／覆寫**既有 upload keystore。
+4. 建立 Play Console 服務帳戶、授權 Android Publisher，把 JSON 寫入 GitHub Secret `PLAY_SERVICE_ACCOUNT_JSON`。
+5. 補齊商店文案／圖示（own_only 與誠實能力聲明；禁止「任意門禁可開」）。
+6. 確認 `VERSION`，`git tag v<VERSION>` 並 push tag（**僅 Hermes／維護者**；本 worker 不打上傳用 tag）。
+7. 內部測試：phone 看 **Internal testing**；wear 看 **Wear OS → Internal testing**。預設 CI 上傳為 `draft` release（Console 可見版本）；要自動對測試員開放再改 `PLAY_RELEASE_STATUS=completed` 或於 Console 發佈該 draft。
 
 ## 版本與 tag
 

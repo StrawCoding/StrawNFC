@@ -24,7 +24,12 @@ jobs:
       ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
       ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
       ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      # Phone + Wear must use dedicated form-factor tracks (do NOT put wear AAB on phone internal).
       PLAY_INTERNAL_TRACK: internal
+      PLAY_WEAR_INTERNAL_TRACK: wear:internal
+      # Draft apps / incomplete listing: draft release still shows versionCodes in Console.
+      # Override to completed once the Play app leaves draft and testers need auto-rollout.
+      PLAY_RELEASE_STATUS: draft
 
     steps:
       - name: Checkout

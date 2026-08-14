@@ -6,12 +6,17 @@ REPO_ROOT = File.expand_path("..", __dir__)
 PENDING_RELEASE_NOTES_PATH = File.join(REPO_ROOT, "release-notes.pending.md")
 CHANGELOGS_DIR = File.join(__dir__, "metadata", "android", "zh-TW", "changelogs")
 PLAY_EDIT_CONFLICT_MESSAGE = "A change was made to the application outside of this Edit, please create a new edit."
+PLAY_DRAFT_APP_MESSAGE = "Only releases with status draft may be created on draft app"
+PLAY_INTERNAL_ERROR_MESSAGE = "Internal error encountered"
 PLAY_UPLOAD_MAX_ATTEMPTS = 3
 PLAY_UPLOAD_RETRY_DELAY_SECONDS = 15
 PLAY_CONSOLE_MAX_LENGTH = 500
 DEFAULT_PACKAGE_NAME = "xyz.wastebase.strawnfc"
 DEFAULT_MOBILE_AAB = "mobile/build/outputs/bundle/release/mobile-release.aab"
 DEFAULT_WEAR_AAB = "wear/build/outputs/bundle/release/wear-release.aab"
+DEFAULT_PHONE_TRACK = "internal"
+DEFAULT_WEAR_TRACK = "wear:internal"
+DEFAULT_RELEASE_STATUS = "draft"
 
 def require_env!(key)
   value = ENV[key].to_s.strip
@@ -58,18 +63,72 @@ def play_edit_conflict?(error)
   error.message.to_s.include?(PLAY_EDIT_CONFLICT_MESSAGE)
 end
 
+def play_draft_app_required?(error)
+  error.message.to_s.include?(PLAY_DRAFT_APP_MESSAGE)
+end
+
+def play_internal_server_error?(error)
+  error.message.to_s.include?(PLAY_INTERNAL_ERROR_MESSAGE)
+end
+
+def play_track_not_found?(error)
+  msg = error.message.to_s
+  msg.include?("Track not found") || msg.match?(/404.*[Tt]rack/)
+end
+
+def wear_track_for_phone_track(phone_track)
+  track = phone_track.to_s.strip
+  return track if track.start_with?("wear:")
+
+  # Play Console UI "Internal testing" → API/fastlane track id is still "internal"
+  # (docs sometimes say "qa"; Console + fastlane community use "internal" / "wear:internal").
+  "wear:#{track}"
+end
+
+def wear_track_missing_help(wear_track)
+  <<~HELP.gsub(/\s+/, " ").strip
+    Wear track #{wear_track.inspect} does not exist for this Play app.
+    Enable it in Play Console: Test and release → Advanced settings → Form factors → Wear OS →
+    Use a dedicated release track for Wear OS → Save.
+    Then re-run the v* tag workflow. Do not put the Wear AAB on the phone internal track
+    (that caused Google Api Error: Internal error encountered on v0.1.0.16).
+    See docs/play-release.md.
+  HELP
+end
+
 def upload_to_play_store_with_edit_retry!(options)
   attempts = 0
+  current = options.dup
 
   begin
     attempts += 1
-    upload_to_play_store(options)
+    upload_to_play_store(current)
   rescue StandardError => error
-    raise unless play_edit_conflict?(error) && attempts < PLAY_UPLOAD_MAX_ATTEMPTS
+    if play_edit_conflict?(error) && attempts < PLAY_UPLOAD_MAX_ATTEMPTS
+      UI.important("Google Play edit was changed outside this upload; retrying with a new edit (attempt #{attempts + 1}/#{PLAY_UPLOAD_MAX_ATTEMPTS})")
+      sleep(PLAY_UPLOAD_RETRY_DELAY_SECONDS)
+      retry
+    end
 
-    UI.important("Google Play edit was changed outside this upload; retrying with a new edit (attempt #{attempts + 1}/#{PLAY_UPLOAD_MAX_ATTEMPTS})")
-    sleep(PLAY_UPLOAD_RETRY_DELAY_SECONDS)
-    retry
+    # Draft apps reject completed/inProgress; Internal error on commit is often the same
+    # constraint masked as a 500 when Wear was wrongly assigned to the phone track.
+    wants_draft_fallback =
+      current[:release_status].to_s != "draft" &&
+      (play_draft_app_required?(error) || play_internal_server_error?(error)) &&
+      attempts < PLAY_UPLOAD_MAX_ATTEMPTS
+
+    if wants_draft_fallback
+      UI.important("Play rejected release_status=#{current[:release_status]} (#{error.message}); retrying track=#{current[:track]} as draft")
+      current = current.merge(release_status: "draft")
+      sleep(PLAY_UPLOAD_RETRY_DELAY_SECONDS)
+      retry
+    end
+
+    if play_track_not_found?(error) && current[:track].to_s.start_with?("wear:")
+      UI.user_error!(wear_track_missing_help(current[:track]))
+    end
+
+    raise
   end
 end
 
@@ -133,7 +192,7 @@ def prepare_play_changelogs(version_name, notes_path = PENDING_RELEASE_NOTES_PAT
   true
 end
 
-def collect_aab_paths
+def collect_upload_artifacts
   requested_mobile = ENV.fetch("AAB_PATH", DEFAULT_MOBILE_AAB).to_s.strip
   requested_wear = ENV.fetch("WEAR_AAB_PATH", DEFAULT_WEAR_AAB).to_s.strip
   mobile_aab = resolve_mobile_aab(requested_mobile)
@@ -141,54 +200,62 @@ def collect_aab_paths
 
   UI.user_error!("Mobile AAB not found at #{mobile_aab}. Build with ./gradlew :mobile:bundleRelease and signing env (docs/play-release.md).") unless File.exist?(mobile_aab)
 
-  aabs = [mobile_aab]
+  artifacts = [{ role: :phone, path: mobile_aab }]
   if !wear_aab.empty? && File.exist?(wear_aab)
-    aabs << wear_aab
-    UI.message("Including Wear AAB for Phone + Wear listing: #{wear_aab}")
+    artifacts << { role: :wear, path: wear_aab }
+    UI.message("Wear AAB will upload on dedicated Wear track: #{wear_aab}")
   else
-    UI.important("Wear AAB not found — uploading phone bundle only. Play Phone + Wear listing can add wear/build/outputs/bundle/release/wear-release.aab later (same package, odd versionCode).")
+    UI.important("Wear AAB not found — uploading phone bundle only. Play Wear OS dedicated track can add wear/build/outputs/bundle/release/wear-release.aab later (same package, odd versionCode).")
   end
-  aabs
+  artifacts
 end
 
-def play_upload_options(aabs, json_key_path, package_name, track, mapping_path, has_changelogs)
+def play_upload_options(aab_path, json_key_path, package_name, track, mapping_path, has_changelogs, release_status)
   mapping_exists = !mapping_path.empty? && File.exist?(mapping_path)
-  release_status = ENV.fetch("PLAY_RELEASE_STATUS", "completed").to_s.strip
-  UI.user_error!("PLAY_RELEASE_STATUS must not be empty") if release_status.empty?
+  UI.user_error!("PLAY_RELEASE_STATUS must not be empty") if release_status.to_s.strip.empty?
 
   options = {
     package_name: package_name,
     json_key: json_key_path,
     track: track,
     release_status: release_status,
+    aab: aab_path,
     skip_upload_apk: true,
     skip_upload_metadata: true,
     skip_upload_images: true,
     skip_upload_screenshots: true,
     skip_upload_changelogs: !has_changelogs
   }
-  options[:mapping] = mapping_path if mapping_exists
-  if aabs.length > 1
-    options[:aab_paths] = aabs
-  else
-    options[:aab] = aabs.first
-  end
+  # Mapping belongs to the phone (R8) artifact only.
+  options[:mapping] = mapping_path if mapping_exists && !track.to_s.start_with?("wear:")
   options
 end
 
 platform :android do
-  desc "Submit the signed release AAB(s) to Google Play internal testing (track=internal)"
+  desc "Submit signed release AAB(s) to Google Play internal testing (phone=internal, wear=wear:internal)"
   lane :internal_testing do
     package_name = ENV.fetch("ANDROID_PACKAGE_NAME", DEFAULT_PACKAGE_NAME).to_s.strip
     package_name = DEFAULT_PACKAGE_NAME if package_name.empty?
     json_key_path = require_env!("PLAY_JSON_KEY_PATH")
-    play_track = ENV.fetch("PLAY_INTERNAL_TRACK", "internal").to_s.strip
+    phone_track = ENV.fetch("PLAY_INTERNAL_TRACK", DEFAULT_PHONE_TRACK).to_s.strip
+    wear_track = ENV.fetch("PLAY_WEAR_INTERNAL_TRACK", wear_track_for_phone_track(phone_track)).to_s.strip
+    release_status = ENV.fetch("PLAY_RELEASE_STATUS", DEFAULT_RELEASE_STATUS).to_s.strip
     requested_mapping_path = ENV.fetch("PLAY_MAPPING_PATH", "").to_s.strip
+    validate_only = ENV.fetch("PLAY_VALIDATE_ONLY", "false").to_s.strip.downcase == "true"
 
     UI.user_error!("PLAY_JSON_KEY_PATH file not found at #{json_key_path}. Set GitHub secret PLAY_SERVICE_ACCOUNT_JSON (not a Gmail password). See docs/play-release.md.") unless File.exist?(json_key_path)
-    UI.user_error!("PLAY_INTERNAL_TRACK must not be empty") if play_track.empty?
+    UI.user_error!("PLAY_INTERNAL_TRACK must not be empty") if phone_track.empty?
+    UI.user_error!("PLAY_WEAR_INTERNAL_TRACK must not be empty") if wear_track.empty?
+    UI.user_error!("PLAY_RELEASE_STATUS must not be empty") if release_status.empty?
 
-    aabs = collect_aab_paths
+    # After Aug 2023, Wear OS AABs must NOT share the phone mobile track.
+    # Combining both in aab_paths on track=internal causes commit-time
+    # "Google Api Error: Server error - Internal error encountered."
+    if wear_track == phone_track || !wear_track.start_with?("wear:")
+      UI.user_error!("Wear track must be a dedicated form-factor track (expected wear:*), got phone=#{phone_track.inspect} wear=#{wear_track.inspect}. See docs/play-release.md.")
+    end
+
+    artifacts = collect_upload_artifacts
     mapping_path = resolve_mapping_path(requested_mapping_path)
 
     ci_version_name = ENV.fetch("CI_VERSION_NAME", "").strip
@@ -200,8 +267,30 @@ platform :android do
       UI.important("[release-notes] No release notes found — skipping changelog upload.")
     end
 
-    upload_to_play_store_with_edit_retry!(
-      play_upload_options(aabs, json_key_path, package_name, play_track, mapping_path, has_changelogs)
-    )
+    wear_optional = ENV.fetch("PLAY_WEAR_OPTIONAL", "false").to_s.strip.downcase == "true"
+
+    artifacts.each do |artifact|
+      track = artifact[:role] == :wear ? wear_track : phone_track
+      UI.message("Uploading #{artifact[:role]} AAB to Play track=#{track} release_status=#{release_status}#{validate_only ? ' validate_only=true' : ''}: #{artifact[:path]}")
+      options = play_upload_options(
+        artifact[:path],
+        json_key_path,
+        package_name,
+        track,
+        mapping_path,
+        has_changelogs,
+        release_status
+      )
+      options[:validate_only] = true if validate_only
+      begin
+        upload_to_play_store_with_edit_retry!(options)
+      rescue StandardError => error
+        if artifact[:role] == :wear && wear_optional && (play_track_not_found?(error) || error.message.to_s.include?("dedicated release track"))
+          UI.important("PLAY_WEAR_OPTIONAL=true — skipping Wear upload because dedicated track is missing: #{error.message}")
+          next
+        end
+        raise
+      end
+    end
   end
 end
