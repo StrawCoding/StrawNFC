@@ -65,7 +65,7 @@ fun CardListScreen(
             }
             if (cards.isEmpty()) {
                 item {
-                    Text("尚無卡片。手機掃描會自動寫入，或在此手動新增。")
+                    Text("尚無卡片。可貼卡掃描、手動輸入，或用手機掃描寫入。")
                 }
             } else {
                 items(cards, key = { it.id }) { card ->

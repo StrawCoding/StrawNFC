@@ -14,9 +14,9 @@
 
 | 卡類型 | 讀取 | 儲存 | 模擬（HCE／模擬使用） | 說明 |
 |--------|------|------|------------------------|------|
-| **UID-only** | **可行**（手機 NFC `Tag.id`；手錶可手動輸入） | **可行**（含加密 `.strawnfc` 備份） | **機型依賴 → MVP 標 `DEVICE_UNSUPPORTED`** | 可備份 UID。Stock Wear Host Card Emulation **通常無法改寫對外 UID**；多數 UID 門禁讀器驗的是 UID，因此**不能宣稱任意門禁可開**。UI：「此裝置無法模擬此門禁」。**不做 UID spoof 破解。** |
-| **MIFARE Classic** | **機型依賴**（手機；**僅在使用者自行提供金鑰**時讀 sector；不內建大規模 key cracking） | **可行**（UID＋類型；金鑰進加密 vault，不存明文於模型） | **不可**（多數機型）→ `PROTOCOL_UNSUPPORTED` / `unsupported_emulate` | MVP 可只記 UID＋type；不做預設金鑰字典攻擊自動化。詳情頁明示「僅備份」。 |
-| **NDEF** | **可行**（手機讀寫） | **可行**（payload；可進加密備份） | **可行**（優先路徑：手錶 Type 4 HCE 模擬 NDEF） | `CapabilityProbe` 通過且有 payload → `SUPPORTED`；`StrawHostApduService` 回應 Type 4 APDU。讀到 NDEF **≠** 門禁已開。 |
+| **UID-only** | **可行**（手機或手錶 NFC `Tag.id`；無讀卡硬體時可手動輸入） | **可行**（含加密 `.strawnfc` 備份） | **機型依賴 → MVP 標 `DEVICE_UNSUPPORTED`** | 可備份 UID。Stock Wear Host Card Emulation **通常無法改寫對外 UID**；多數 UID 門禁讀器驗的是 UID，因此**不能宣稱任意門禁可開**。UI：「此裝置無法模擬此門禁」。**不做 UID spoof 破解。** |
+| **MIFARE Classic** | **機型依賴**（手機／手錶 ReaderMode；**僅在使用者自行提供金鑰**時讀 sector；不內建大規模 key cracking） | **可行**（UID＋類型；金鑰進加密 vault，不存明文於模型） | **不可**（多數機型）→ `PROTOCOL_UNSUPPORTED` / `unsupported_emulate` | MVP 可只記 UID＋type；不做預設金鑰字典攻擊自動化。詳情頁明示「僅備份」。 |
+| **NDEF** | **可行**（手機或支援讀卡的手錶） | **可行**（payload；可進加密備份） | **可行**（優先路徑：手錶 Type 4 HCE 模擬 NDEF） | `CapabilityProbe` 通過且有 payload → `SUPPORTED`；`StrawHostApduService` 回應 Type 4 APDU。讀到 NDEF **≠** 門禁已開。 |
 | **DESFire** | **可行（僅摘要）**：ATQA／SAK／ATS／應用目錄摘要 | **可行**（標記為不可克隆） | **不可** → `PROTOCOL_UNSUPPORTED` | **明確不可克隆**。文案：「DESFire 為加密門禁，StrawNFC 只備份識別資訊，無法也不應克隆。」 |
 
 ## Stock HCE 與 UID

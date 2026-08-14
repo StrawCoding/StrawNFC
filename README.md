@@ -21,11 +21,11 @@ Wear OS 為主的 NFC／門禁卡**備份與清單**工具；僅服務自己擁�
 
 | 模組 | 職責 |
 |------|------|
-| `:wear` | 主 UI：同意條款、卡片庫、Tile／Complication、HCE（能力探測後） |
-| `:mobile` | 極薄 Companion：手機 NFC 掃描 → Wear Data Layer 同步 |
-| `:shared` | 共用模型／序列化／備份編解碼 |
+| `:wear` | 主 UI：同意條款、卡片庫、**本機 NFC 讀卡（機型依賴）**、Tile／Complication、HCE（能力探測後） |
+| `:mobile` | 極薄 Companion：手機 NFC 掃描 → Wear Data Layer 同步（保留） |
+| `:shared` | 共用模型／序列化／備份編解碼／`NfcCardReader` |
 
-手錶不依賴 Companion 也可手動輸入 UID 與管理清單。
+手錶可獨立貼卡讀取（硬體支援時）；亦可手動 UID；手機掃描寫入仍保留。
 
 ## 建置
 

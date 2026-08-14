@@ -52,7 +52,8 @@ data class CardClassification(
 )
 
 /**
- * Mobile NFC → [StoredCard]. Does not crack keys or clone transit/payment cards.
+ * NFC tag → [StoredCard]. Shared by phone companion and Wear on-device reader.
+ * Does not crack keys or clone transit/payment cards.
  */
 object NfcCardReader {
     fun snapshotFromTag(tag: Tag): NfcScanSnapshot {

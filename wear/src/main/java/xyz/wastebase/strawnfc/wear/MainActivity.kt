@@ -25,8 +25,6 @@ import xyz.wastebase.strawnfc.data.CardRepository
 import xyz.wastebase.strawnfc.data.Prefs
 import xyz.wastebase.strawnfc.hce.CapabilityProbe
 import xyz.wastebase.strawnfc.hce.StrawHostApduService
-import xyz.wastebase.strawnfc.model.CardType
-import xyz.wastebase.strawnfc.model.EmulationCapability
 import xyz.wastebase.strawnfc.model.StoredCard
 import xyz.wastebase.strawnfc.ui.AddCardScreen
 import xyz.wastebase.strawnfc.ui.BackupScreen
@@ -36,7 +34,6 @@ import xyz.wastebase.strawnfc.ui.ConsentScreen
 import xyz.wastebase.strawnfc.ui.EmulateScreen
 import xyz.wastebase.strawnfc.ui.WearLoadingPlaceholder
 import xyz.wastebase.strawnfc.ui.WearShell
-import java.util.UUID
 
 /**
  * Sealed routes without SwipeDismissableNavHost — that host crashed on launch when the
@@ -224,21 +221,8 @@ fun StrawNfcWearApp(
         WearRoute.Add -> NestedSwipeScreen(routeKey = "add", onDismissed = { goBack() }) {
             AddCardScreen(
                 onCancel = { route = WearRoute.List },
-                onSave = { form ->
-                    val now = System.currentTimeMillis()
-                    repository.upsert(
-                        StoredCard(
-                            id = UUID.randomUUID().toString(),
-                            name = form.name,
-                            type = CardType.UID_ONLY,
-                            uidHex = form.uidHex,
-                            createdAtEpochMs = now,
-                            updatedAtEpochMs = now,
-                            favorite = false,
-                            emulateStatus = EmulationCapability.DEVICE_UNSUPPORTED,
-                                notes = "手錶手動新增；僅備份，不宣稱可開門禁",
-                        ),
-                    )
+                onSave = { card ->
+                    repository.upsert(card)
                     refresh()
                     route = WearRoute.List
                 },
