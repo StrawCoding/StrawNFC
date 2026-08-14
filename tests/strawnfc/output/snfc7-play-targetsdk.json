@@ -82,5 +82,6 @@
     "Worker evidence status=PASS is stage completion signal; final Hermes mark PASS only after trigger-verify + OpenCode acceptance."
   ],
   "failures": [],
-  "commit": "1e807e3"
+  "commit": "ca735d4",
+  "fix_commit": "52afdd3"
 }
