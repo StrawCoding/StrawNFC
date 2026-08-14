@@ -78,5 +78,7 @@
     "Phone internal empty draft was filled locally with 0.1.0.16 / 20032 as proof; next Hermes tag should bump past that versionCode.",
     "Worker evidence status=PASS is stage completion signal; final Hermes mark PASS only after trigger-verify + OpenCode acceptance."
   ],
-  "failures": []
+  "failures": [],
+  "fix_commit": "20f0411",
+  "commit": "20f0411"
 }
