@@ -1,7 +1,6 @@
 package xyz.wastebase.strawnfc.ui
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
@@ -13,6 +12,7 @@ import androidx.wear.compose.foundation.lazy.items
 import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
 import androidx.wear.compose.material.Chip
 import androidx.wear.compose.material.ChipDefaults
+import androidx.wear.compose.material.CompactChip
 import androidx.wear.compose.material.ListHeader
 import androidx.wear.compose.material.PositionIndicator
 import androidx.wear.compose.material.Scaffold
@@ -38,8 +38,10 @@ fun CardListScreen(
         ScalingLazyColumn(
             modifier = Modifier.fillMaxSize(),
             state = listState,
-            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 28.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+            contentPadding = WearListDefaults.ContentPadding,
+            // Default AutoCenteringParams centers item 0 → large empty band under TimeText.
+            autoCentering = null,
+            verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
             item {
                 ListHeader {
@@ -55,7 +57,7 @@ fun CardListScreen(
                 )
             }
             item {
-                Chip(
+                CompactChip(
                     label = { Text("加密備份") },
                     onClick = onBackup,
                     modifier = Modifier.fillMaxWidth(),
@@ -67,20 +69,15 @@ fun CardListScreen(
                 }
             } else {
                 items(cards, key = { it.id }) { card ->
-                    Chip(
+                    CompactChip(
                         label = {
                             Text(
                                 text = buildString {
                                     if (card.favorite) append("★ ")
                                     append(card.name)
+                                    append(" · ")
+                                    append(card.uidHex ?: "—")
                                 },
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                        },
-                        secondaryLabel = {
-                            Text(
-                                text = "${card.type} · ${card.uidHex ?: "—"}",
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                             )
