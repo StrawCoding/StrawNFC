@@ -1,0 +1,41 @@
+{
+  "schema": "strawnfc-snfc0-scaffold/v1",
+  "stage": "snfc0-scaffold-docs",
+  "status": "PASS",
+  "product": "StrawNFC",
+  "version": "0.1.0.2",
+  "generated_at": "2026-08-14T05:31:00Z",
+  "package": "xyz.wastebase.strawnfc",
+  "branch": "main",
+  "modules": ["shared", "mobile", "wear"],
+  "claims": {
+    "legal_scope": "own_only",
+    "stock_hce_equals_uid_clone": false,
+    "desfire_cloneable": false,
+    "thin_mobile_companion": true,
+    "card_types_in_matrix": ["UID_ONLY", "MIFARE_CLASSIC", "NDEF", "DESFIRE"]
+  },
+  "artifacts": {
+    "version_file": "VERSION",
+    "bump_script": "scripts/bump-version.sh",
+    "readme": "README.md",
+    "capability_matrix": "docs/capability-matrix.md",
+    "legal_scope": "docs/legal-scope.md",
+    "settings_gradle": "settings.gradle.kts",
+    "wear_apk": "wear/build/outputs/apk/debug/wear-debug.apk",
+    "mobile_apk": "mobile/build/outputs/apk/debug/mobile-debug.apk"
+  },
+  "tests": {
+    "assemble_wear_debug": "PASS",
+    "assemble_mobile_debug": "PASS",
+    "commands": [
+      "export ANDROID_HOME=/opt/android-sdk; ./gradlew :wear:assembleDebug :mobile:assembleDebug --no-daemon"
+    ]
+  },
+  "failures": [],
+  "notes": [
+    "SNFC0 scaffold only; Compose/HCE/scan land in later stages",
+    "Worker evidence JSON status=PASS for Hermes trigger-verify; final mark PASS is Hermes/OpenCode only",
+    "No git remote configured at stage time — local commit only unless remote added"
+  ]
+}
