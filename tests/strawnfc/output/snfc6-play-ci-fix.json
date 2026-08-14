@@ -1,0 +1,58 @@
+{
+  "schema": "strawnfc-snfc6-play-ci-fix/v1",
+  "stage": "snfc6-play-ci-fix",
+  "status": "PASS",
+  "product": "StrawNFC",
+  "version": "0.1.0.12",
+  "generated_at": "2026-08-14T14:35:40Z",
+  "package": "xyz.wastebase.strawnfc",
+  "branch": "main",
+  "failed_run": {
+    "url": "https://github.com/StrawCoding/StrawNFC/actions/runs/31809417449",
+    "workflow": "play-internal-release",
+    "tag": "v0.1.0.11",
+    "failed_step": "Setup Ruby 3.2",
+    "error_summary": "bundle install failed: excon-1.7.0 requires ruby >= 3.3.0, incompatible with CI Ruby 3.2.11; also lockfile needed platform normalization hint"
+  },
+  "fix_summary": "Upgrade play-internal-release workflow Ruby 3.2 → 3.3; Gemfile ruby \">= 3.3.0\"; regenerate Gemfile.lock with RUBY VERSION 3.3.8 + platforms ruby/x86_64-linux/x86_64-linux-gnu; document Ruby/bundler notes in docs/play-release.md. Root cause: fastlane→excon 1.7 needs Ruby ≥ 3.3.",
+  "claims": {
+    "legal_scope": "own_only",
+    "stock_hce_equals_uid_clone": false,
+    "uid_spoof_cracking": false,
+    "desfire_cloneable": false,
+    "keystore_overwritten": false,
+    "secrets_committed": false,
+    "worker_pushed_v_star_tag": false,
+    "worker_marked_hermes_pass": false
+  },
+  "artifacts": {
+    "workflow": ".github/workflows/play-internal-release.yml",
+    "gemfile": "Gemfile",
+    "gemfile_lock": "Gemfile.lock",
+    "play_docs": "docs/play-release.md",
+    "ruby_version_workflow": "3.3",
+    "ruby_constraint_gemfile": ">= 3.3.0",
+    "bundled_with": "2.6.7",
+    "platforms": ["ruby", "x86_64-linux", "x86_64-linux-gnu"]
+  },
+  "tests": {
+    "bundle_check_host": "PASS",
+    "bundle_install_docker_ruby_3_3": "PASS",
+    "fastlane_version_resolves": "PASS",
+    "shared_unit_test": "PASS",
+    "workflow_ruby_3_3": "PASS",
+    "commands": [
+      "docker run --rm -v \"$PWD\":/app -w /app ruby:3.3-bookworm bash -lc 'gem install bundler -v 2.6.7 && bundle install && bundle exec fastlane --version'",
+      "bundle check",
+      "export ANDROID_HOME=/opt/android-sdk; ./gradlew :shared:test --no-daemon",
+      "rg -n 'RUBY_VERSION|Setup Ruby|\"v\\*\"|internal_testing' .github/workflows/play-internal-release.yml"
+    ]
+  },
+  "pushed_main": false,
+  "notes": [
+    "Do not cut a new v* tag from this worker; Hermes will re-tag after push.",
+    "Local host GCC 15 + binutils 2.42 cannot compile nkf; use gcc-13 or Docker ruby:3.3 for local bundle install. GitHub-hosted runners are unaffected.",
+    "Worker evidence status=PASS is stage completion signal; final Hermes mark PASS only after trigger-verify + OpenCode acceptance."
+  ],
+  "failures": []
+}

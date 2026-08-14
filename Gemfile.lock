@@ -252,10 +252,14 @@ GEM
 
 PLATFORMS
   ruby
+  x86_64-linux
   x86_64-linux-gnu
 
 DEPENDENCIES
   fastlane
+
+RUBY VERSION
+   ruby 3.3.8p144
 
 BUNDLED WITH
    2.6.7

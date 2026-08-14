@@ -68,17 +68,26 @@ export ANDROID_KEY_PASSWORD
 
 CI 可用 `CI_VERSION_NAME`（由 tag `v*` 去掉 `v`）覆寫 `versionName`。
 
-## Fastlane
+## Fastlane / Ruby
 
-- 目錄：repo 根 `fastlane/Fastfile`、`Gemfile`
+- 目錄：repo 根 `fastlane/Fastfile`、`Gemfile`、`Gemfile.lock`
 - Lane：`internal_testing`（`track=internal`，可用 `PLAY_INTERNAL_TRACK` 覆寫）
 - 與 StrawMoneyBook 相同：Play **edit conflict** 最多重試 3 次、間隔 15 秒
 - 需要 `PLAY_JSON_KEY_PATH` 指向服務帳戶 JSON 檔；缺檔時錯誤訊息會指向本文件
 - `PLAY_RELEASE_STATUS` 預設 `completed`；首次若 listing 未完成可改 `draft`
 
+### Ruby／Bundler（CI 必看）
+
+- Workflow [`.github/workflows/play-internal-release.yml`](../.github/workflows/play-internal-release.yml) 使用 **Ruby 3.3**（`ruby/setup-ruby` + `bundler-cache: true`）。
+- `Gemfile` 宣告 `ruby ">= 3.3.0"`。現行 fastlane 依賴鏈含 **excon ≥ 1.7**，該 gem 要求 Ruby ≥ 3.3；**不可**把 CI 鎖回 3.2，否則 `bundle install` 會失敗（見 run `31809417449`）。
+- 變更依賴後請在 Ruby ≥ 3.3 環境執行 `bundle lock`（必要時 `bundle lock --add-platform ruby x86_64-linux`）並 **commit `Gemfile.lock`**。勿只改 `Gemfile` 不更新 lock。
+- 本機若遇 native gem（如 `nkf`）因 GCC 15／舊 binutils 編譯失敗，請改用 `gcc-13`（或 Docker `ruby:3.3`）再 `bundle install`；GitHub-hosted runner 不受此影響。
+
 本機（有 JSON 檔時；本階段通常沒有）：
 
 ```bash
+# 需要 Ruby >= 3.3 與與 lockfile 相容的 bundler
+bundle install
 export ANDROID_PACKAGE_NAME=xyz.wastebase.strawnfc
 export PLAY_JSON_KEY_PATH  # 服務帳戶 JSON 路徑，不在 repo
 export AAB_PATH="$PWD/mobile/build/outputs/bundle/release/mobile-release.aab"
