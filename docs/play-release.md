@@ -155,7 +155,13 @@ Gmail／Google 帳號密碼**不能**當作 Play API 憑證。
 4. 建立 Play Console 服務帳戶、授權 Android Publisher，把 JSON 寫入 GitHub Secret `PLAY_SERVICE_ACCOUNT_JSON`。
 5. 補齊商店文案／圖示（own_only 與誠實能力聲明；禁止「任意門禁可開」）。
 6. 確認 `VERSION`，`git tag v<VERSION>` 並 push tag（**僅 Hermes／維護者**；本 worker 不打上傳用 tag）。
-7. 內部測試：phone 看 **Internal testing**；wear 看 **Wear OS → Internal testing**。CI 預設 `PLAY_RELEASE_STATUS=completed`（測試員可下載）。若需只進 Console 不對測試員開放，再改回 `draft`。**手錶無法下載**時先查 `wear:internal` 是否 `completed`（不是只看 phone `internal`）。
+7. 內部測試：phone 看 **Internal testing**；wear 看 **Wear OS → Internal testing**。CI 預設 `PLAY_RELEASE_STATUS=completed`（測試員可下載）。若需只進 Console 不對測試員開放，再改回 `draft`。
+8. **測試員必須掛在「有 completed 版本」的軌道上。** 常見踩坑（2026-08-15 實測）：
+   - App 仍是 **draft app** 時，`alpha`／`wear:alpha` **只能**放 `draft` release（API：`Only releases with status draft may be created on draft app`）→ 測試員在 closed track **看不到／裝不到**。
+   - 可下載的版本在 `internal`／`wear:internal`（completed），但若 Console 把 internal 升級成 open/closed testing，Publisher API **無法**用 `googleGroups` 掛測試員（`switch back to communities-based testing`）。
+   - 若 Google Group 只掛在 phone `alpha`、沒掛在 **Wear OS → Internal testing** 測試員，手錶 Play 一樣裝不到（與版本 draft/completed 無關）。
+   - **Console 必做**：Test and release → **Wear OS** → Internal testing → Testers → 加入同一 Google Group／email list（例如 `strawmoneybooktester@googlegroups.com`），並讓測試帳號開啟 opt-in。
+   - App 離開 draft、closed testing 可放 completed 之後，改走 SMB 同款：phone=`alpha` + wear=`wear:alpha`（群組已可 API 掛上）。目前已建立 `wear:alpha` 並掛上群組，但在 draft app 期間 release 只能是 draft。
 
 ## 版本與 tag
 
