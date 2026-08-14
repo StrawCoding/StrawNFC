@@ -4,7 +4,7 @@
   "status": "PASS",
   "product": "StrawNFC",
   "version": "0.1.0.16",
-  "generated_at": "2026-08-14T15:26:30Z",
+  "generated_at": "2026-08-14T15:27:22Z",
   "package": "xyz.wastebase.strawnfc",
   "branch": "main",
   "failed_run": {
@@ -86,7 +86,7 @@
       "java -jar /tmp/bundletool.jar dump manifest --bundle=wear/build/outputs/bundle/release/wear-release.aab"
     ]
   },
-  "pushed_main": false,
+  "pushed_main": true,
   "notes": [
     "Do not cut a new v* tag from this worker; Hermes will re-tag after push.",
     "Error text 'too low: 20026' refers to the rejected artifact versionCode, not the numeric targetSdk.",
@@ -95,5 +95,6 @@
     "Worker evidence status=PASS is stage completion signal; final Hermes mark PASS only after trigger-verify + OpenCode acceptance."
   ],
   "failures": [],
-  "fix_commit": "52afdd3"
+  "fix_commit": "52afdd3",
+  "commit": "845c1dd"
 }
