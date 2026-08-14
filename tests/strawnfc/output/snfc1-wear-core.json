@@ -3,13 +3,13 @@
   "stage": "snfc1-wear-core",
   "status": "PASS",
   "product": "StrawNFC",
-  "version": "0.1.0.3",
-  "generated_at": "2026-08-14T05:40:58Z",
+  "version": "0.1.0.4",
+  "generated_at": "2026-08-14T05:45:35Z",
   "package": "xyz.wastebase.strawnfc",
   "branch": "main",
   "remote": null,
   "push": "skipped_no_remote",
-  "base_git_head": "88f7760c0bcac230f1e0663219b0366aa6ada67e",
+  "base_git_head": "e2bfb47c1d47834380efd660bfd2ac9eafc0ea39",
   "tasks": [
     "Task3_shared_StoredCard_model",
     "Task4_wear_encrypted_repository",
@@ -35,23 +35,25 @@
     "card_list_screen": "wear/src/main/java/xyz/wastebase/strawnfc/ui/CardListScreen.kt",
     "add_card_screen": "wear/src/main/java/xyz/wastebase/strawnfc/ui/AddCardScreen.kt",
     "card_detail_screen": "wear/src/main/java/xyz/wastebase/strawnfc/ui/CardDetailScreen.kt",
-    "wear_apk": "wear/build/outputs/apk/debug/wear-debug.apk"
+    "wear_apk": "wear/build/outputs/apk/debug/wear-debug.apk",
+    "gradle_properties": "gradle.properties"
   },
   "tests": {
     "shared_unit_test": "PASS",
     "wear_unit_test": "PASS",
     "assemble_wear_debug": "PASS",
     "commands": [
-      "export ANDROID_HOME=/opt/android-sdk; ./gradlew :shared:test :wear:testDebugUnitTest :wear:assembleDebug --no-daemon"
+      "export ANDROID_HOME=/opt/android-sdk; ./gradlew :shared:test :wear:testDebugUnitTest :wear:assembleDebug --no-daemon --rerun-tasks"
     ]
   },
   "failures": [],
   "notes": [
     "SNFC1 implements shared model, encrypted CardRepository, consent gate, CardList/Add/Detail with manual UID",
     "Manual UID cards default emulateStatus=DEVICE_UNSUPPORTED; UI does not claim door unlock",
+    "Hardened gradle.properties: parallel=false, kotlin in-process — fixes daemon/race Could not delete wear/build",
     "Worker evidence JSON status=PASS for Hermes trigger-verify; final mark PASS is Hermes/OpenCode only",
     "No git remote — local commits on main only",
     "git_head omitted to avoid self-hash recursion; use git rev-parse HEAD at verify time"
   ],
-  "evidence_base_commit": "88f7760c0bcac230f1e0663219b0366aa6ada67e"
+  "evidence_base_commit": "e2bfb47c1d47834380efd660bfd2ac9eafc0ea39"
 }
