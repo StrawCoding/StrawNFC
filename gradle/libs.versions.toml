@@ -14,6 +14,10 @@ playServicesWearable = "18.2.0"
 appcompat = "1.7.0"
 kotlinxSerialization = "1.7.3"
 junit = "4.13.2"
+wearTiles = "1.4.1"
+wearProtolayout = "1.2.1"
+guava = "33.0.0-android"
+wearWatchface = "1.2.1"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -31,6 +35,11 @@ androidx-wear-compose-foundation = { group = "androidx.wear.compose", name = "co
 play-services-wearable = { group = "com.google.android.gms", name = "play-services-wearable", version.ref = "playServicesWearable" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
+androidx-wear-tiles = { group = "androidx.wear.tiles", name = "tiles", version.ref = "wearTiles" }
+androidx-wear-protolayout = { group = "androidx.wear.protolayout", name = "protolayout", version.ref = "wearProtolayout" }
+androidx-wear-protolayout-material = { group = "androidx.wear.protolayout", name = "protolayout-material", version.ref = "wearProtolayout" }
+guava = { group = "com.google.guava", name = "guava", version.ref = "guava" }
+androidx-wear-watchface-complications-data-source = { group = "androidx.wear.watchface", name = "watchface-complications-data-source", version.ref = "wearWatchface" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

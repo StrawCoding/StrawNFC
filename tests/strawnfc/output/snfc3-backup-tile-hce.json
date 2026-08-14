@@ -1,0 +1,81 @@
+{
+  "schema": "strawnfc-snfc3-backup-tile-hce/v1",
+  "stage": "snfc3-backup-tile-hce",
+  "status": "PASS",
+  "product": "StrawNFC",
+  "version": "0.1.0.7",
+  "generated_at": "2026-08-14T06:20:00Z",
+  "package": "xyz.wastebase.strawnfc",
+  "branch": "main",
+  "remote": null,
+  "push": "skipped_no_remote",
+  "base_git_head": "76f3aacddf200ce8ddd0e1acdda8f02c6a446f94",
+  "tasks": [
+    "Task9_encrypted_backup_codec_roundtrip",
+    "Task10_wear_tile_and_favorite_complication",
+    "Task11_capability_probe_and_ndef_type4_hce",
+    "Task12_honest_uid_classic_desfire_labels"
+  ],
+  "claims": {
+    "legal_scope": "own_only",
+    "backup_format": "strawnfc-backup/v1",
+    "backup_crypto": "AES-GCM/PBKDF2WithHmacSHA256",
+    "stock_hce_equals_uid_clone": false,
+    "uid_spoof_cracking": false,
+    "door_unlocked_copy": false,
+    "desfire_cloneable": false,
+    "desfire_emulate_status": "PROTOCOL_UNSUPPORTED",
+    "classic_emulate_status": "PROTOCOL_UNSUPPORTED",
+    "uid_only_emulate_status": "DEVICE_UNSUPPORTED",
+    "ndef_type4_aid": "D2760000850101",
+    "tile_opens": "emulate_prepare_screen",
+    "complication_opens": "emulate_prepare_screen"
+  },
+  "artifacts": {
+    "backup_codec": "shared/src/main/java/xyz/wastebase/strawnfc/backup/BackupCodec.kt",
+    "type4_apdu_handler": "shared/src/main/java/xyz/wastebase/strawnfc/hce/Type4NdefApduHandler.kt",
+    "capability_probe": "wear/src/main/java/xyz/wastebase/strawnfc/hce/CapabilityProbe.kt",
+    "host_apdu_service": "wear/src/main/java/xyz/wastebase/strawnfc/hce/StrawHostApduService.kt",
+    "emulate_screen": "wear/src/main/java/xyz/wastebase/strawnfc/ui/EmulateScreen.kt",
+    "backup_screen_wear": "wear/src/main/java/xyz/wastebase/strawnfc/ui/BackupScreen.kt",
+    "backup_activity_mobile": "mobile/src/main/java/xyz/wastebase/strawnfc/ui/BackupActivity.kt",
+    "tile_service": "wear/src/main/java/xyz/wastebase/strawnfc/tile/StrawNfcTileService.kt",
+    "complication_service": "wear/src/main/java/xyz/wastebase/strawnfc/complication/FavoriteCardComplicationService.kt",
+    "capability_matrix": "docs/capability-matrix.md",
+    "wear_manifest": "wear/src/main/AndroidManifest.xml",
+    "mobile_apk": "mobile/build/outputs/apk/debug/mobile-debug.apk",
+    "wear_apk": "wear/build/outputs/apk/debug/wear-debug.apk"
+  },
+  "tests": {
+    "shared_unit_test": "PASS",
+    "mobile_unit_test": "PASS",
+    "wear_unit_test": "PASS",
+    "assemble_mobile_debug": "PASS",
+    "assemble_wear_debug": "PASS",
+    "commands": [
+      "export ANDROID_HOME=/opt/android-sdk; ./gradlew :shared:test :mobile:testDebugUnitTest :wear:testDebugUnitTest :mobile:assembleDebug :wear:assembleDebug --no-daemon"
+    ],
+    "counts": {
+      "shared_backup_codec": 8,
+      "shared_type4_apdu": 3,
+      "shared_model": 4,
+      "shared_sync_paths": 4,
+      "wear_capability_probe": 8,
+      "wear_repository": 3,
+      "wear_sync_ingest": 3,
+      "mobile_nfc_reader": 9,
+      "mobile_sender_contract": 1
+    }
+  },
+  "failures": [],
+  "notes": [
+    "SNFC3: encrypted BackupCodec round-trip; Wear BackupScreen + Mobile SAF BackupActivity",
+    "Wear Tile + Favorite Complication open Emulate prepare screen (never claim door unlocked)",
+    "CapabilityProbe + StrawHostApduService NDEF Type4 AID D2760000850101; APDU unit tests PASS",
+    "UID/Classic/DESFire Emulate UI honest DEVICE_UNSUPPORTED or PROTOCOL_UNSUPPORTED; capability-matrix updated",
+    "Worker evidence JSON status=PASS for Hermes trigger-verify; final mark PASS is Hermes/OpenCode only",
+    "No git remote — local commits on main only",
+    "git_head omitted to avoid self-hash recursion; use git rev-parse HEAD at verify time"
+  ],
+  "evidence_base_commit": "76f3aacddf200ce8ddd0e1acdda8f02c6a446f94"
+}

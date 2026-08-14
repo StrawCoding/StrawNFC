@@ -20,6 +20,7 @@ import xyz.wastebase.strawnfc.model.StoredCard
 fun CardListScreen(
     cards: List<StoredCard>,
     onAdd: () -> Unit,
+    onBackup: () -> Unit,
     onOpen: (StoredCard) -> Unit,
 ) {
     ScalingLazyColumn(
@@ -38,6 +39,13 @@ fun CardListScreen(
                 onClick = onAdd,
                 modifier = Modifier.fillMaxWidth(),
                 colors = ChipDefaults.primaryChipColors(),
+            )
+        }
+        item {
+            Chip(
+                label = { Text("加密備份") },
+                onClick = onBackup,
+                modifier = Modifier.fillMaxWidth(),
             )
         }
         if (cards.isEmpty()) {

@@ -1,4 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">StrawNFC</string>
+    <string name="hce_service_desc">StrawNFC NDEF Type 4 HCE（誠實路徑；不 UID spoof）</string>
+    <string name="aid_group_ndef">NDEF Type 4</string>
+    <string name="tile_label">StrawNFC</string>
+    <string name="tile_description">最愛卡準備模擬（不宣稱已開門）</string>
+    <string name="complication_label">StrawNFC 最愛卡</string>
+    <string name="complication_description">顯示最愛卡並開啟準備模擬畫面</string>
 </resources>

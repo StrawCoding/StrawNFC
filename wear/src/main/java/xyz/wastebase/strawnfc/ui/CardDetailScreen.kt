@@ -23,6 +23,7 @@ import xyz.wastebase.strawnfc.model.StoredCard
 fun CardDetailScreen(
     card: StoredCard,
     onToggleFavorite: () -> Unit,
+    onEmulate: () -> Unit,
     onDelete: () -> Unit,
     onBack: () -> Unit,
 ) {
@@ -40,7 +41,15 @@ fun CardDetailScreen(
         Text("模擬：${honestEmulateLabel(card)}", style = MaterialTheme.typography.caption1)
         Spacer(Modifier.height(6.dp))
         Text(honestCapabilityNote(card), style = MaterialTheme.typography.caption2)
+        card.notes?.takeIf { it.isNotBlank() }?.let {
+            Spacer(Modifier.height(4.dp))
+            Text(it, style = MaterialTheme.typography.caption3)
+        }
         Spacer(Modifier.height(10.dp))
+        Button(onClick = onEmulate, modifier = Modifier.fillMaxWidth()) {
+            Text("準備模擬")
+        }
+        Spacer(Modifier.height(4.dp))
         Button(onClick = onToggleFavorite, modifier = Modifier.fillMaxWidth()) {
             Text(if (card.favorite) "取消最愛" else "設為最愛")
         }
@@ -57,9 +66,9 @@ fun CardDetailScreen(
 
 fun honestEmulateLabel(card: StoredCard): String =
     when (card.emulateStatus) {
-        EmulationCapability.SUPPORTED -> "支援（協定路徑）"
-        EmulationCapability.DEVICE_UNSUPPORTED -> "此裝置無法模擬"
-        EmulationCapability.PROTOCOL_UNSUPPORTED -> "協定不支援模擬"
+        EmulationCapability.SUPPORTED -> "支援（NDEF Type4 路徑）"
+        EmulationCapability.DEVICE_UNSUPPORTED -> "此裝置無法模擬此門禁"
+        EmulationCapability.PROTOCOL_UNSUPPORTED -> "協定不支援模擬（僅備份）"
         EmulationCapability.UNKNOWN -> "未探測"
     }
 
@@ -68,11 +77,11 @@ fun honestCapabilityNote(card: StoredCard): String =
         CardType.DESFIRE ->
             "DESFire 為加密門禁，StrawNFC 只備份識別資訊，無法也不應克隆。"
         CardType.MIFARE_CLASSIC ->
-            "MIFARE Classic 多數機型無法在手錶模擬；不做金鑰破解。"
+            "MIFARE Classic：多數機型無法在手錶模擬（unsupported_emulate）；不做金鑰破解。僅備份 UID／類型。"
         CardType.UID_ONLY ->
             "Stock HCE 通常無法改寫對外 UID；僅備份＋能力探測，不宣稱可開門禁。"
         CardType.NDEF ->
-            "NDEF 可走 Type 4 HCE（能力探測通過後）；本階段僅儲存。"
+            "NDEF 可走 Type 4 HCE（能力探測通過後啟用）。讀到 NDEF ≠ 門禁已開。"
         CardType.UNKNOWN ->
             "未知類型：僅儲存，不宣稱可模擬。"
     }

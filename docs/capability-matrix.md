@@ -4,14 +4,16 @@
 
 政策：`own_only`（僅自己擁有／已授權的卡）。詳見 [`legal-scope.md`](legal-scope.md)。
 
+**SNFC3 實作狀態（Backup＋Tile＋誠實 HCE）：** `CapabilityProbe` + `StrawHostApduService`（NDEF Type 4 AID `D2760000850101`）已落地；UID／Classic／DESFire 在 Emulate UI **誠實標示不可／機型依賴**，永不宣稱「已開門」。
+
 ## 矩陣（讀取 × 儲存 × 模擬）
 
 | 卡類型 | 讀取 | 儲存 | 模擬（HCE／模擬使用） | 說明 |
 |--------|------|------|------------------------|------|
-| **UID-only** | **可行**（手機 NFC `Tag.id`；手錶可手動輸入） | **可行** | **機型依賴** | 可備份 UID。Stock Wear Host Card Emulation **通常無法改寫對外 UID**；多數 UID 門禁讀器驗的是 UID，因此**不能宣稱任意門禁可開**。`FEATURE_NFC_HOST_CARD_EMULATION` 不足或 UID spoof 不可用 → UI：「此裝置無法模擬此門禁」。 |
-| **MIFARE Classic** | **機型依賴**（手機；**僅在使用者自行提供金鑰**時讀 sector；不內建大規模 key cracking） | **可行**（UID＋類型；金鑰進加密 vault，不存明文於模型） | **不可**（多數機型）→ `unsupported_emulate` / `PROTOCOL_UNSUPPORTED` 或 `DEVICE_UNSUPPORTED` | MVP 可只記 UID＋type；不做預設金鑰字典攻擊自動化。 |
-| **NDEF** | **可行**（手機讀寫） | **可行**（payload） | **可行**（優先路徑：手錶 Type 4 HCE 模擬 NDEF） | 能力探測通過後啟用；無硬體時以 APDU 單元測試驗證。 |
-| **DESFire** | **可行（僅摘要）**：ATQA／SAK／ATS／應用目錄摘要 | **可行**（標記為不可克隆） | **不可** → `PROTOCOL_UNSUPPORTED` | **明確不可克隆**。加密門禁；StrawNFC 只備份識別資訊，無法也不應克隆。 |
+| **UID-only** | **可行**（手機 NFC `Tag.id`；手錶可手動輸入） | **可行**（含加密 `.strawnfc` 備份） | **機型依賴 → MVP 標 `DEVICE_UNSUPPORTED`** | 可備份 UID。Stock Wear Host Card Emulation **通常無法改寫對外 UID**；多數 UID 門禁讀器驗的是 UID，因此**不能宣稱任意門禁可開**。UI：「此裝置無法模擬此門禁」。**不做 UID spoof 破解。** |
+| **MIFARE Classic** | **機型依賴**（手機；**僅在使用者自行提供金鑰**時讀 sector；不內建大規模 key cracking） | **可行**（UID＋類型；金鑰進加密 vault，不存明文於模型） | **不可**（多數機型）→ `PROTOCOL_UNSUPPORTED` / `unsupported_emulate` | MVP 可只記 UID＋type；不做預設金鑰字典攻擊自動化。詳情頁明示「僅備份」。 |
+| **NDEF** | **可行**（手機讀寫） | **可行**（payload；可進加密備份） | **可行**（優先路徑：手錶 Type 4 HCE 模擬 NDEF） | `CapabilityProbe` 通過且有 payload → `SUPPORTED`；`StrawHostApduService` 回應 Type 4 APDU。讀到 NDEF **≠** 門禁已開。 |
+| **DESFire** | **可行（僅摘要）**：ATQA／SAK／ATS／應用目錄摘要 | **可行**（標記為不可克隆） | **不可** → `PROTOCOL_UNSUPPORTED` | **明確不可克隆**。文案：「DESFire 為加密門禁，StrawNFC 只備份識別資訊，無法也不應克隆。」 |
 
 ## Stock HCE 與 UID
 
@@ -20,13 +22,22 @@
 | Stock Android／Wear HCE 可模擬任意 UID 並開門禁 | **假**（一般不可；產品禁止如此宣稱） |
 | Stock HCE 可走 ISO-DEP／Type 4（如 NDEF）回應 | **真**（在 feature 與 AID 註冊成功時） |
 | DESFire／多數加密門禁可被本 App「完整複製」 | **假**；僅偵測與標記 |
+| Tile／Complication 點擊＝已開門 | **假**；僅開啟「準備模擬」畫面 |
 
 ## 能力探測原則
 
-1. 檢查 `PackageManager.FEATURE_NFC_HOST_CARD_EMULATION`（及相關 NFC feature）。
-2. 確認 `HostApduService` 註冊與 AID meta-data。
-3. 僅在 probe 通過且卡類型為支援路徑（MVP：NDEF）時將 `emulateStatus` 標為 `SUPPORTED`。
-4. UID-only／Classic／DESFire：UI 顯示誠實狀態，保留「僅備份」說明。
+1. 檢查 `PackageManager.FEATURE_NFC` 與 `FEATURE_NFC_HOST_CARD_EMULATION`。
+2. 確認 `HostApduService`（`StrawHostApduService`）註冊與 AID meta-data（NDEF Type 4）。
+3. 僅在 probe 通過且卡類型為支援路徑（MVP：NDEF + payload）時將 `emulateStatus` 標為 `SUPPORTED`。
+4. UID-only／Classic／DESFire：UI 顯示誠實狀態，保留「僅備份」說明；禁止「已開門」文案。
+
+## 備份
+
+| 項目 | 行為 |
+|------|------|
+| 格式 | `.strawnfc` = `SNFC` magic + AES-GCM（PBKDF2 密碼衍生） |
+| 內容 | 卡片清單 JSON（不含 Classic 明金鑰） |
+| 入口 | Wear `BackupScreen`；Mobile `BackupActivity`（SAF） |
 
 ## MVP 不做
 
@@ -34,3 +45,4 @@
 - 悠遊卡／信用卡／交通卡複製
 - DESFire 克隆
 - Root／Magisk 專用 UID spoof 教學或打包
+- 假開門／「已解鎖門禁」文案

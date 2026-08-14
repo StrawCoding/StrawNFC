@@ -177,9 +177,9 @@ object NfcCardReader {
     const val NOTE_DESFIRE =
         "DESFire 為加密門禁，StrawNFC 只備份識別資訊，無法也不應克隆。"
     const val NOTE_CLASSIC =
-        "MIFARE Classic：僅記錄 UID／類型；不自動嘗試預設金鑰。金鑰需使用者自行提供（二期）。"
+        "MIFARE Classic：僅記錄 UID／類型（unsupported_emulate）；不自動嘗試預設金鑰。金鑰需使用者自行提供（二期）。"
     const val NOTE_NDEF =
-        "已讀取 NDEF payload；手錶模擬視 HCE 能力探測而定。"
+        "已讀取 NDEF payload；手錶可走 Type 4 HCE（CapabilityProbe 通過後）。讀到 NDEF ≠ 門禁已開。"
     const val NOTE_UID =
-        "UID-only：Stock HCE 通常無法改寫對外 UID；僅備份，不宣稱可開門禁。"
+        "UID-only：Stock HCE 通常無法改寫對外 UID；此裝置無法模擬此門禁。僅備份，不宣稱可開門禁。"
 }

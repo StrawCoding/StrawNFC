@@ -11,4 +11,10 @@
     <string name="scan_status_sync_failed">同步失敗：%1$s</string>
     <string name="scan_toast_synced">已寫入 Wear Data Layer</string>
     <string name="open_scan">開始掃描</string>
+    <string name="open_backup">加密備份</string>
+    <string name="backup_title">加密備份</string>
+    <string name="backup_export">匯出 .strawnfc</string>
+    <string name="backup_import">匯入 .strawnfc</string>
+    <string name="backup_export_ok">備份已寫入</string>
+    <string name="backup_import_ok">備份已解密</string>
 </resources>
