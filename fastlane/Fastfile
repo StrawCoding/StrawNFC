@@ -16,7 +16,7 @@ DEFAULT_MOBILE_AAB = "mobile/build/outputs/bundle/release/mobile-release.aab"
 DEFAULT_WEAR_AAB = "wear/build/outputs/bundle/release/wear-release.aab"
 DEFAULT_PHONE_TRACK = "internal"
 DEFAULT_WEAR_TRACK = "wear:internal"
-DEFAULT_RELEASE_STATUS = "draft"
+DEFAULT_RELEASE_STATUS = "completed"
 
 def require_env!(key)
   value = ENV[key].to_s.strip

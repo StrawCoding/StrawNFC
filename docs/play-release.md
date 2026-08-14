@@ -114,7 +114,7 @@ CI 可用 `CI_VERSION_NAME`（由 tag `v*` 去掉 `v`）覆寫 `versionName`。
 - Lane：`internal_testing`（phone=`PLAY_INTERNAL_TRACK` 預設 `internal`；wear=`PLAY_WEAR_INTERNAL_TRACK` 預設 `wear:internal`）
 - Play **edit conflict** 最多重試 3 次、間隔 15 秒；若 draft app 拒收 `completed`／或 commit 出現 Internal error，會自動再試 `release_status=draft`
 - 需要 `PLAY_JSON_KEY_PATH` 指向服務帳戶 JSON 檔；缺檔時錯誤訊息會指向本文件
-- `PLAY_RELEASE_STATUS` 預設 **`draft`**（新 App／listing 未齊時可讓 Console 看到 versionCode，避免「空 draft」）；App 離開 draft、要自動對內部測試員 rollout 時再設 `completed`
+- `PLAY_RELEASE_STATUS` 預設 **`completed`**（內部測試員可下載 phone／wear）。僅要 Console 可見、不對測試員開放時再設 `draft`。若 draft app／listing 未齊導致 API 拒收 `completed`，Fastlane 會自動 fallback 到 `draft`（見上）
 - 本機 dry-run：`PLAY_VALIDATE_ONLY=true`（走 Play `validateOnly`，不留下正式提交）
 
 ### Ruby／Bundler（CI 必看）
@@ -155,7 +155,7 @@ Gmail／Google 帳號密碼**不能**當作 Play API 憑證。
 4. 建立 Play Console 服務帳戶、授權 Android Publisher，把 JSON 寫入 GitHub Secret `PLAY_SERVICE_ACCOUNT_JSON`。
 5. 補齊商店文案／圖示（own_only 與誠實能力聲明；禁止「任意門禁可開」）。
 6. 確認 `VERSION`，`git tag v<VERSION>` 並 push tag（**僅 Hermes／維護者**；本 worker 不打上傳用 tag）。
-7. 內部測試：phone 看 **Internal testing**；wear 看 **Wear OS → Internal testing**。預設 CI 上傳為 `draft` release（Console 可見版本）；要自動對測試員開放再改 `PLAY_RELEASE_STATUS=completed` 或於 Console 發佈該 draft。
+7. 內部測試：phone 看 **Internal testing**；wear 看 **Wear OS → Internal testing**。CI 預設 `PLAY_RELEASE_STATUS=completed`（測試員可下載）。若需只進 Console 不對測試員開放，再改回 `draft`。**手錶無法下載**時先查 `wear:internal` 是否 `completed`（不是只看 phone `internal`）。
 
 ## 版本與 tag
 

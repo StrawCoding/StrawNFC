@@ -27,9 +27,9 @@ jobs:
       # Phone + Wear must use dedicated form-factor tracks (do NOT put wear AAB on phone internal).
       PLAY_INTERNAL_TRACK: internal
       PLAY_WEAR_INTERNAL_TRACK: wear:internal
-      # Draft apps / incomplete listing: draft release still shows versionCodes in Console.
-      # Override to completed once the Play app leaves draft and testers need auto-rollout.
-      PLAY_RELEASE_STATUS: draft
+      # Testers cannot install draft releases. Wear/phone internal must be completed
+      # for watch Play downloads (symptom: form factor OK but watch still cannot install).
+      PLAY_RELEASE_STATUS: completed
 
     steps:
       - name: Checkout
