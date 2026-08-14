@@ -3,8 +3,9 @@
   "stage": "snfc6-play-ci-fix",
   "status": "PASS",
   "product": "StrawNFC",
-  "version": "0.1.0.12",
-  "generated_at": "2026-08-14T14:35:40Z",
+  "version": "0.1.0.13",
+  "generated_at": "2026-08-14T14:36:30Z",
+  "commit": "c9fc4b1",
   "package": "xyz.wastebase.strawnfc",
   "branch": "main",
   "failed_run": {
@@ -33,7 +34,11 @@
     "ruby_version_workflow": "3.3",
     "ruby_constraint_gemfile": ">= 3.3.0",
     "bundled_with": "2.6.7",
-    "platforms": ["ruby", "x86_64-linux", "x86_64-linux-gnu"]
+    "platforms": [
+      "ruby",
+      "x86_64-linux",
+      "x86_64-linux-gnu"
+    ]
   },
   "tests": {
     "bundle_check_host": "PASS",
@@ -48,7 +53,7 @@
       "rg -n 'RUBY_VERSION|Setup Ruby|\"v\\*\"|internal_testing' .github/workflows/play-internal-release.yml"
     ]
   },
-  "pushed_main": false,
+  "pushed_main": true,
   "notes": [
     "Do not cut a new v* tag from this worker; Hermes will re-tag after push.",
     "Local host GCC 15 + binutils 2.42 cannot compile nkf; use gcc-13 or Docker ruby:3.3 for local bundle install. GitHub-hosted runners are unaffected.",
