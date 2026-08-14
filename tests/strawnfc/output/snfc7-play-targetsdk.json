@@ -3,8 +3,8 @@
   "stage": "snfc7-play-targetsdk",
   "status": "PASS",
   "product": "StrawNFC",
-  "version": "0.1.0.15",
-  "generated_at": "2026-08-14T15:12:57Z",
+  "version": "0.1.0.16",
+  "generated_at": "2026-08-14T15:26:30Z",
   "package": "xyz.wastebase.strawnfc",
   "branch": "main",
   "failed_run": {
@@ -12,9 +12,15 @@
     "workflow": "play-internal-release",
     "tag": "v0.1.0.13",
     "failed_step": "Publish to Google Play internal testing",
-    "error_summary": "Google Api Error: Invalid request - Target SDK of artifact is too low: 20026. (20026 = phone versionCode for 0.1.0.13; actual targetSdk was 34, below Play phone minimum API 35 / upcoming API 36.)"
+    "error_summary": "Google Api Error: Invalid request - Target SDK of artifact is too low: 20026. (20026 = phone versionCode for 0.1.0.13; actual targetSdk was 34, below Play phone minimum API 35 / API 36 from 2026-08-31.)"
   },
-  "fix_summary": "Raised compileSdk/targetSdk 34→36 in gradle/libs.versions.toml; upgraded AGP 8.7.3→8.9.1 (required for API 36). Documented Play Target SDK thresholds and the misleading versionCode-in-error message in docs/play-release.md. Root cause: Play rejects phone AAB with targetSdk 34; Wear listing kept.",
+  "hermes_verify_failure": {
+    "at": "2026-08-14T23:20:53+08:00",
+    "log": "/root/.hermes/logs/task-workers/strawnfc/snfc7-play-targetsdk.log",
+    "cause": "Pipeline fell back to :mobile/:wear:assembleRelease without keystore passwords, but Gradle doFirst required signing for assembleRelease as well as bundleRelease.",
+    "fix": "Require release signing only for bundleRelease; allow unsigned assembleRelease for Hermes/local compile checks."
+  },
+  "fix_summary": "Raised compileSdk/targetSdk 34→36 (AGP 8.9.1) so Play accepts phone+wear AABs. Separately: assembleRelease no longer hard-fails without signing (Hermes verify path), while bundleRelease still requires upload keystore env. Documented in docs/play-release.md.",
   "sdk": {
     "compileSdk": 36,
     "targetSdk": 36,
@@ -26,8 +32,8 @@
     "mobile": {
       "path": "mobile/build/outputs/bundle/release/mobile-release.aab",
       "package": "xyz.wastebase.strawnfc",
-      "versionName": "0.1.0.15",
-      "versionCode": 20030,
+      "versionName": "0.1.0.16",
+      "versionCode": 20032,
       "minSdkVersion": 26,
       "targetSdkVersion": 36,
       "compileSdkVersion": 36
@@ -35,8 +41,8 @@
     "wear": {
       "path": "wear/build/outputs/bundle/release/wear-release.aab",
       "package": "xyz.wastebase.strawnfc",
-      "versionName": "0.1.0.15",
-      "versionCode": 20031,
+      "versionName": "0.1.0.16",
+      "versionCode": 20033,
       "minSdkVersion": 30,
       "targetSdkVersion": 36,
       "compileSdkVersion": 36
@@ -60,28 +66,34 @@
     "play_docs": "docs/play-release.md",
     "mobile_aab": "mobile/build/outputs/bundle/release/mobile-release.aab",
     "wear_aab": "wear/build/outputs/bundle/release/wear-release.aab",
+    "mobile_gradle": "mobile/build.gradle.kts",
+    "wear_gradle": "wear/build.gradle.kts",
     "version_file": "VERSION"
   },
   "tests": {
     "shared_unit_test": "PASS",
+    "mobile_assemble_release_unsigned_no_password": "PASS",
+    "wear_assemble_release_unsigned_no_password": "PASS",
     "mobile_bundle_release_signed": "PASS",
     "wear_bundle_release_signed": "PASS",
+    "bundle_release_rejects_without_signing": "PASS",
     "bundletool_target_sdk_36": "PASS",
     "commands": [
+      "unset ANDROID_KEYSTORE_*; ./gradlew :shared:test :mobile:assembleRelease :wear:assembleRelease --no-daemon",
       "export ANDROID_HOME=/opt/android-sdk ANDROID_KEYSTORE_FILE=… ANDROID_KEYSTORE_PASSWORD=… ANDROID_KEY_ALIAS=strawnfc-upload ANDROID_KEY_PASSWORD=…",
-      "./gradlew :shared:test :mobile:bundleRelease :wear:bundleRelease --no-daemon",
-      "java -jar bundletool.jar dump manifest --bundle=mobile/build/outputs/bundle/release/mobile-release.aab",
-      "java -jar bundletool.jar dump manifest --bundle=wear/build/outputs/bundle/release/wear-release.aab"
+      "./gradlew :mobile:bundleRelease :wear:bundleRelease --no-daemon",
+      "java -jar /tmp/bundletool.jar dump manifest --bundle=mobile/build/outputs/bundle/release/mobile-release.aab",
+      "java -jar /tmp/bundletool.jar dump manifest --bundle=wear/build/outputs/bundle/release/wear-release.aab"
     ]
   },
-  "pushed_main": true,
+  "pushed_main": false,
   "notes": [
     "Do not cut a new v* tag from this worker; Hermes will re-tag after push.",
     "Error text 'too low: 20026' refers to the rejected artifact versionCode, not the numeric targetSdk.",
-    "Phone+Wear same listing retained; both AABs now declare targetSdkVersion=36.",
+    "Phone+Wear same listing retained; both AABs declare targetSdkVersion=36.",
+    "Hermes trigger-verify previously failed on unsigned assembleRelease gate; that is fixed in this revision.",
     "Worker evidence status=PASS is stage completion signal; final Hermes mark PASS only after trigger-verify + OpenCode acceptance."
   ],
   "failures": [],
-  "commit": "ca735d4",
   "fix_commit": "52afdd3"
 }

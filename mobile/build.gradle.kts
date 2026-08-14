@@ -69,14 +69,14 @@ android {
     }
 }
 
-arrayOf("bundleRelease", "assembleRelease").forEach { taskName ->
-    tasks.matching { it.name == taskName }.configureEach {
-        doFirst {
-            check(hasReleaseSigning) {
-                "Release signing is not configured. Export ANDROID_KEYSTORE_FILE, " +
-                    "ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD " +
-                    "(see docs/play-release.md). Do not commit the keystore."
-            }
+// Play upload must be signed. assembleRelease may run unsigned for local/Hermes compile checks
+// when keystore passwords are absent (see docs/play-release.md).
+tasks.matching { it.name == "bundleRelease" }.configureEach {
+    doFirst {
+        check(hasReleaseSigning) {
+            "Release signing is not configured. Export ANDROID_KEYSTORE_FILE, " +
+                "ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD " +
+                "(see docs/play-release.md). Do not commit the keystore."
         }
     }
 }

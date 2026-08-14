@@ -51,7 +51,7 @@ export ANDROID_KEY_PASSWORD
 # 產物：wear/build/outputs/bundle/release/wear-release.aab
 ```
 
-未設定上述 env 時，`:mobile:bundleRelease` / `:wear:bundleRelease` 會失敗（避免誤用 debug 金鑰上傳）。Debug 組建不需要這些變數。
+未設定上述 env 時，`:mobile:bundleRelease` / `:wear:bundleRelease` **會失敗**（避免誤用 debug 金鑰上傳到 Play）。`:mobile:assembleRelease` / `:wear:assembleRelease` 在缺簽章 env 時仍可產出 **unsigned** release APK，供本機／Hermes 編譯驗證（targetSdk／versionCode 仍寫入 manifest）；**不可**拿 unsigned APK／AAB 上傳 Play。Debug 組建不需要這些變數。
 
 可選本機檔 `keystore.properties`（已 gitignore），鍵名：`storeFile`、`storePassword`、`keyAlias`、`keyPassword`。不要把填好的檔案提交。
 
