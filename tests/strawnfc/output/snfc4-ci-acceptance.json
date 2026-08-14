@@ -1,0 +1,73 @@
+{
+  "schema": "strawnfc-snfc4-ci-acceptance/v1",
+  "stage": "snfc4-ci-acceptance",
+  "status": "PASS",
+  "product": "StrawNFC",
+  "version": "0.1.0.10",
+  "generated_at": "2026-08-14T06:34:30Z",
+  "package": "xyz.wastebase.strawnfc",
+  "branch": "main",
+  "remote": null,
+  "push": "skipped_no_remote",
+  "base_git_head": "b0ef484a9c1491b03a20feb4ac095070ed21ae18",
+  "tasks": [
+    "Task13_ci_workflow_and_manual_checklist",
+    "Task14_opencode_acceptance_pack"
+  ],
+  "claims": {
+    "legal_scope": "own_only",
+    "stock_hce_equals_uid_clone": false,
+    "uid_spoof_cracking": false,
+    "door_unlocked_copy": false,
+    "desfire_cloneable": false,
+    "desfire_emulate_status": "PROTOCOL_UNSUPPORTED",
+    "classic_emulate_status": "PROTOCOL_UNSUPPORTED",
+    "uid_only_emulate_status": "DEVICE_UNSUPPORTED",
+    "ndef_type4_aid": "D2760000850101",
+    "false_door_claim_in_ui": false,
+    "capability_matrix_honest": true,
+    "final_stage_mark_pass_by_worker": false
+  },
+  "artifacts": {
+    "android_ci": ".github/workflows/android-ci.yml",
+    "manual_test_checklist": "docs/manual-test-checklist.md",
+    "capability_matrix": "docs/capability-matrix.md",
+    "legal_scope": "docs/legal-scope.md",
+    "plan": "/root/.hermes/plans/2026-08-14_131543-strawnfc-wearos.md",
+    "kickoff": "/root/.hermes/plans/kickoff/2026-08-14-strawnfc-snfc4.md",
+    "mobile_apk": "mobile/build/outputs/apk/debug/mobile-debug.apk",
+    "wear_apk": "wear/build/outputs/apk/debug/wear-debug.apk",
+    "mobile_apk_versionName": "0.1.0.10",
+    "wear_apk_versionName": "0.1.0.10"
+  },
+  "manual_checklist_items": [
+    "consent_gate",
+    "manual_uid_crud",
+    "mobile_scan_and_sync",
+    "backup_export_import",
+    "tile_opens_emulate_prepare",
+    "ndef_hce_apdu_or_device",
+    "desfire_unsupported"
+  ],
+  "tests": {
+    "shared_unit_test": "PASS",
+    "assemble_wear_debug": "PASS",
+    "assemble_mobile_debug": "PASS",
+    "pipeline_script_local": "PASS",
+    "commands": [
+      "export ANDROID_HOME=/opt/android-sdk; ./gradlew :shared:test :wear:assembleDebug :mobile:assembleDebug --no-daemon",
+      "bash /root/.hermes/scripts/pipelines/strawnfc-snfc4-ci-acceptance.sh"
+    ]
+  },
+  "failures": [],
+  "notes": [
+    "SNFC4 Task13: android-ci.yml runs :shared:test + wear/mobile assembleDebug; docs/manual-test-checklist.md covers consent/UID/scan+sync/backup/tile/NDEF HCE/DESFire",
+    "SNFC4 Task14: capability-matrix SNFC4 note + Debug APK paths in evidence; honest matrix — no false door-unlock claims",
+    "Device NFC/door hardware not available in worker env; checklist device rows left for OpenCode/on-site; NDEF covered by shared Type4 APDU unit tests",
+    "Worker local verify PASS; final stage mark PASS is Hermes trigger-verify + OpenCode only",
+    "No git remote — local commits on main only (push noted if remote appears)",
+    "git_head omitted to avoid self-hash recursion; use git rev-parse HEAD at verify time",
+    "Earlier Hermes pipeline FAIL: missing android-ci.yml + manual-test-checklist.md before this commit"
+  ],
+  "evidence_base_commit": "b0ef484a9c1491b03a20feb4ac095070ed21ae18"
+}

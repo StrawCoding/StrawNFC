@@ -6,6 +6,8 @@
 
 **SNFC3 實作狀態（Backup＋Tile＋誠實 HCE）：** `CapabilityProbe` + `StrawHostApduService`（NDEF Type 4 AID `D2760000850101`）已落地；UID／Classic／DESFire 在 Emulate UI **誠實標示不可／機型依賴**，永不宣稱「已開門」。
 
+**SNFC4 驗收狀態（CI＋手動清單）：** `.github/workflows/android-ci.yml`（`:shared:test` + Wear／Mobile `assembleDebug`）；手動步驟見 [`manual-test-checklist.md`](manual-test-checklist.md)。Debug APK：`wear/build/outputs/apk/debug/wear-debug.apk`、`mobile/build/outputs/apk/debug/mobile-debug.apk`。證據：`tests/strawnfc/output/snfc4-ci-acceptance.json`。**無假開門宣稱**；最終 PASS 僅 Hermes verify + OpenCode APPROVE。
+
 ## 矩陣（讀取 × 儲存 × 模擬）
 
 | 卡類型 | 讀取 | 儲存 | 模擬（HCE／模擬使用） | 說明 |
