@@ -48,7 +48,8 @@
   "notes": [
     "SNFC0 scaffold only; Compose/HCE/scan land in later stages",
     "Worker evidence JSON status=PASS for Hermes trigger-verify; final mark PASS is Hermes/OpenCode only",
-    "No git remote — local commits on main only"
+    "No git remote — local commits on main only",
+    "git_head omitted to avoid self-hash recursion; use git rev-parse HEAD at verify time"
   ],
-  "git_head": "ac874185b81dd965831a19ae19fe679da5aee515"
+  "evidence_base_commit": "47baefafca8ed95b66b44ad2e7d82c87e119f915"
 }
