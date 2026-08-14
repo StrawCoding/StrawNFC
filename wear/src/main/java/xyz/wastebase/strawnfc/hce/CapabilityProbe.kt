@@ -35,11 +35,11 @@ object CapabilityProbe {
 
     fun isHceServiceRegistered(context: Context): Boolean {
         return runCatching {
-            val info = context.packageManager.getServiceInfo(
+            context.packageManager.getServiceInfo(
                 android.content.ComponentName(context, StrawHostApduService::class.java),
                 PackageManager.GET_META_DATA,
             )
-            info != null
+            true
         }.getOrDefault(false)
     }
 

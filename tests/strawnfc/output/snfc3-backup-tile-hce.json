@@ -3,7 +3,7 @@
   "stage": "snfc3-backup-tile-hce",
   "status": "PASS",
   "product": "StrawNFC",
-  "version": "0.1.0.7",
+  "version": "0.1.0.8",
   "generated_at": "2026-08-14T06:20:00Z",
   "package": "xyz.wastebase.strawnfc",
   "branch": "main",
