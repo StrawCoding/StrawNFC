@@ -61,7 +61,7 @@ class CardRepository(
 
         fun create(context: android.content.Context): CardRepository =
             CardRepository(
-                vault = AndroidKeystoreCryptoVault.create(context),
+                vault = createBestEffortCryptoVault(context),
                 store = PrefsCardBlobStore.create(context),
             )
     }

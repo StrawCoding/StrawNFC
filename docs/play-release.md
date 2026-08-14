@@ -162,6 +162,7 @@ Gmail／Google 帳號密碼**不能**當作 Play API 憑證。
    - 若 Google Group 只掛在 phone `alpha`、沒掛在 **Wear OS → Internal testing** 測試員，手錶 Play 一樣裝不到（與版本 draft/completed 無關）。
    - **Console 必做**：Test and release → **Wear OS** → Internal testing → Testers → 加入同一 Google Group／email list（例如 `strawmoneybooktester@googlegroups.com`），並讓測試帳號開啟 opt-in。
    - App 離開 draft、closed testing 可放 completed 之後，改走 SMB 同款：phone=`alpha` + wear=`wear:alpha`（群組已可 API 掛上）。目前已建立 `wear:alpha` 並掛上群組，但在 draft app 期間 release 只能是 draft。
+9. **Xiaomi Watch 2 / Wear OS 5 啟動閃退：** Wear Compose **1.4.x** 在 `targetSdk ≥ 35` 會讀 `reduce_motion` global setting → `SecurityException`。必須用 Wear Compose **≥ 1.5.6**（本專案用 **1.6.2**）。
 
 ## 版本與 tag
 
