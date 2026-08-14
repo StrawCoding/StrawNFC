@@ -3,9 +3,8 @@
   "stage": "snfc7-play-targetsdk",
   "status": "PASS",
   "product": "StrawNFC",
-  "version": "0.1.0.14",
-  "generated_at": "2026-08-14T15:11:01Z",
-  "commit_before_push": "pending",
+  "version": "0.1.0.15",
+  "generated_at": "2026-08-14T15:12:57Z",
   "package": "xyz.wastebase.strawnfc",
   "branch": "main",
   "failed_run": {
@@ -27,8 +26,8 @@
     "mobile": {
       "path": "mobile/build/outputs/bundle/release/mobile-release.aab",
       "package": "xyz.wastebase.strawnfc",
-      "versionName": "0.1.0.14",
-      "versionCode": 20028,
+      "versionName": "0.1.0.15",
+      "versionCode": 20030,
       "minSdkVersion": 26,
       "targetSdkVersion": 36,
       "compileSdkVersion": 36
@@ -36,8 +35,8 @@
     "wear": {
       "path": "wear/build/outputs/bundle/release/wear-release.aab",
       "package": "xyz.wastebase.strawnfc",
-      "versionName": "0.1.0.14",
-      "versionCode": 20029,
+      "versionName": "0.1.0.15",
+      "versionCode": 20031,
       "minSdkVersion": 30,
       "targetSdkVersion": 36,
       "compileSdkVersion": 36
@@ -82,5 +81,6 @@
     "Phone+Wear same listing retained; both AABs now declare targetSdkVersion=36.",
     "Worker evidence status=PASS is stage completion signal; final Hermes mark PASS only after trigger-verify + OpenCode acceptance."
   ],
-  "failures": []
+  "failures": [],
+  "commit": "52afdd3"
 }
