@@ -30,8 +30,11 @@ fun EmulateScreen(
     probe: ProbeResult,
     status: EmulationCapability,
     sessionActive: Boolean,
+    nfcEnabled: Boolean,
+    controlMessage: String? = null,
     onStartNdefSession: () -> Unit,
     onStopSession: () -> Unit,
+    onOpenNfcSettings: () -> Unit,
     onBack: () -> Unit,
 ) {
     Column(
@@ -51,20 +54,36 @@ fun EmulateScreen(
         Text(emulateHonestyBody(card, probe, status), style = MaterialTheme.typography.caption2)
         Spacer(Modifier.height(6.dp))
         Text(
-            "HCE：nfc=${probe.hasNfc} hce=${probe.hasHostCardEmulation} svc=${probe.hceServiceRegistered}",
+            "HCE：nfc=${probe.hasNfc} hce=${probe.hasHostCardEmulation} svc=${probe.hceServiceRegistered} radio=${if (nfcEnabled) "on" else "off"}",
             style = MaterialTheme.typography.caption3,
         )
+        if (!controlMessage.isNullOrBlank()) {
+            Spacer(Modifier.height(4.dp))
+            Text(controlMessage, style = MaterialTheme.typography.caption2)
+        }
         Spacer(Modifier.height(10.dp))
+        if (!nfcEnabled) {
+            Text("系統 NFC 關閉時無法模擬。", style = MaterialTheme.typography.caption1)
+            Spacer(Modifier.height(6.dp))
+            Button(onClick = onOpenNfcSettings, modifier = Modifier.fillMaxWidth()) {
+                Text("開啟 NFC 設定")
+            }
+            Spacer(Modifier.height(4.dp))
+        }
         when {
             status == EmulationCapability.SUPPORTED && card.type == CardType.NDEF -> {
                 if (sessionActive) {
-                    Text("NDEF 工作階段進行中（靠近讀卡機；不代表已開門）", style = MaterialTheme.typography.caption1)
+                    Text("NDEF 工作階段進行中（偏好 HCE 已請求；不代表已開門）", style = MaterialTheme.typography.caption1)
                     Spacer(Modifier.height(6.dp))
                     Button(onClick = onStopSession, modifier = Modifier.fillMaxWidth()) {
                         Text("停止模擬")
                     }
                 } else {
-                    Button(onClick = onStartNdefSession, modifier = Modifier.fillMaxWidth()) {
+                    Button(
+                        onClick = onStartNdefSession,
+                        enabled = nfcEnabled,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
                         Text(CapabilityProbe.honestActionLabel(status))
                     }
                 }

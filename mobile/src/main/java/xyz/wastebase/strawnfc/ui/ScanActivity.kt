@@ -19,6 +19,7 @@ import xyz.wastebase.strawnfc.mobile.BuildConfig
 import xyz.wastebase.strawnfc.mobile.R
 import xyz.wastebase.strawnfc.model.StoredCard
 import xyz.wastebase.strawnfc.nfc.NfcCardReader
+import xyz.wastebase.strawnfc.nfc.NfcSettingsIntents
 import xyz.wastebase.strawnfc.sync.CardSender
 import xyz.wastebase.strawnfc.sync.NoWearNodeException
 import java.util.concurrent.Executors
@@ -41,6 +42,7 @@ class ScanActivity : ComponentActivity() {
     private lateinit var detailView: TextView
     private lateinit var nameInput: EditText
     private lateinit var syncButton: Button
+    private lateinit var nfcSettingsButton: Button
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -63,6 +65,11 @@ class ScanActivity : ComponentActivity() {
             isEnabled = false
             setOnClickListener { writeLastCardToWear(manual = true) }
         }
+        nfcSettingsButton = Button(this).apply {
+            text = getString(R.string.scan_open_nfc_settings)
+            visibility = android.view.View.GONE
+            setOnClickListener { NfcSettingsIntents.openNfcSettings(this@ScanActivity) }
+        }
 
         val content = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -80,6 +87,7 @@ class ScanActivity : ComponentActivity() {
                 },
             )
             addView(statusView)
+            addView(nfcSettingsButton)
             addView(
                 TextView(context).apply {
                     text = getString(R.string.scan_name_label)
@@ -110,7 +118,20 @@ class ScanActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        val adapter = nfcAdapter ?: return
+        val adapter = nfcAdapter
+        if (adapter == null) {
+            nfcSettingsButton.visibility = android.view.View.GONE
+            return
+        }
+        if (!adapter.isEnabled) {
+            statusView.text = getString(R.string.scan_nfc_disabled)
+            nfcSettingsButton.visibility = android.view.View.VISIBLE
+            return
+        }
+        nfcSettingsButton.visibility = android.view.View.GONE
+        if (statusView.text == getString(R.string.scan_nfc_disabled)) {
+            statusView.text = getString(R.string.scan_status_ready)
+        }
         val filters = arrayOf(
             IntentFilter(NfcAdapter.ACTION_TAG_DISCOVERED),
             IntentFilter(NfcAdapter.ACTION_TECH_DISCOVERED),

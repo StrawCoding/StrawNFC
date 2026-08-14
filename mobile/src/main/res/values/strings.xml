@@ -5,6 +5,8 @@
     <string name="scan_subtitle">v%1$s · own_only · 靠近手機即自動寫入已配對手錶</string>
     <string name="scan_status_ready">請將自己擁有／已授權的卡片靠近手機背面</string>
     <string name="scan_nfc_unavailable">此裝置無 NFC 硬體</string>
+    <string name="scan_nfc_disabled">系統 NFC 已關閉，請先開啟後再貼卡</string>
+    <string name="scan_open_nfc_settings">開啟 NFC 設定</string>
     <string name="scan_status_scanned">已掃描 %1$s · UID %2$s · 正在寫入手錶…</string>
     <string name="scan_name_label">卡片名稱</string>
     <string name="scan_name_hint">例如：公司大門</string>

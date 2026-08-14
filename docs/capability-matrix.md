@@ -34,6 +34,7 @@
 2. 確認 `HostApduService`（`StrawHostApduService`）註冊與 AID meta-data（NDEF Type 4）。
 3. 僅在 probe 通過且卡類型為支援路徑（MVP：NDEF + payload）時將 `emulateStatus` 標為 `SUPPORTED`。
 4. UID-only／Classic／DESFire：UI 顯示誠實狀態，保留「僅備份」說明；禁止「已開門」文案。
+5. **NFC 工作階段控制（Wear）：** `NfcModeController` 保證 ReaderMode 與 HCE **互斥**；模擬時呼叫 `CardEmulation.setPreferredService`；NFC 關閉時導向系統設定（App 不能強制開無線電）。
 
 ## 備份
 

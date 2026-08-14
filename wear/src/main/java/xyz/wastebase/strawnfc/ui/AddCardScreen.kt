@@ -14,6 +14,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
 import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
 import androidx.wear.compose.material.Button
@@ -33,8 +36,8 @@ import xyz.wastebase.strawnfc.model.EmulationCapability
 import xyz.wastebase.strawnfc.model.StoredCard
 import xyz.wastebase.strawnfc.model.UidNormalizer
 import xyz.wastebase.strawnfc.nfc.NfcCardReader
+import xyz.wastebase.strawnfc.nfc.NfcModeController
 import xyz.wastebase.strawnfc.nfc.NfcReaderCapability
-import xyz.wastebase.strawnfc.nfc.NfcReaderSession
 import java.util.UUID
 
 @Composable
@@ -44,9 +47,10 @@ fun AddCardScreen(
 ) {
     val context = LocalContext.current
     val activity = context as? Activity
+    val lifecycleOwner = LocalLifecycleOwner.current
     val readerPresent = remember(context) { NfcReaderCapability.isReaderHardwarePresent(context) }
-    val adapterEnabled = remember(context) { NfcReaderCapability.isAdapterEnabled(context) }
 
+    var adapterEnabled by remember { mutableStateOf(NfcModeController.adapterEnabled(context)) }
     var name by remember { mutableStateOf("") }
     var uidRaw by remember { mutableStateOf("") }
     var scanning by remember { mutableStateOf(false) }
@@ -60,29 +64,52 @@ fun AddCardScreen(
     val lengthWarning = manualValid && scannedCard == null && !UidNormalizer.isCommonByteLength(normalized)
     val listState = rememberScalingLazyListState()
 
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                adapterEnabled = NfcModeController.adapterEnabled(context)
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
     LaunchedEffect(readerPresent, adapterEnabled) {
         scanHint = when {
             !readerPresent -> "此手錶無 NFC 讀卡硬體；可手動輸入 UID，或用手機掃描寫入。"
-            !adapterEnabled -> "請先在系統設定開啟 NFC，再按「貼卡掃描」。"
-            else -> "可貼卡掃描，或手動輸入 UID。手機掃描同步仍可用。"
+            !adapterEnabled -> "NFC 已關閉。請開啟系統 NFC 後再掃描。"
+            else -> "可貼卡掃描，或手動輸入 UID。掃描時會暫停 HCE 模擬。"
         }
     }
 
     DisposableEffect(scanning, activity) {
         if (scanning && activity != null && readerPresent) {
-            val ok = NfcReaderSession.enable(activity) { tag ->
+            when (val result = NfcModeController.enterReader(activity) { tag ->
                 val card = NfcCardReader.fromTag(tag, name = name.ifBlank { "手錶掃描" })
                 scannedCard = card
                 uidRaw = card.uidHex.orEmpty()
                 if (name.isBlank()) name = card.name
                 scanning = false
                 scanHint = "已讀取 ${card.type} · ${card.uidHex ?: "—"}"
+            }) {
+                NfcModeController.EnterResult.Ok -> Unit
+                NfcModeController.EnterResult.NfcOff -> {
+                    scanning = false
+                    adapterEnabled = false
+                    scanHint = "NFC 未開啟，請先到系統設定開啟。"
+                }
+                NfcModeController.EnterResult.Failed -> {
+                    scanning = false
+                    scanHint = "無法啟用讀卡（機型可能僅支援模擬／支付）。請手動輸入或用手機。"
+                }
+                NfcModeController.EnterResult.BusyEmulating -> {
+                    scanning = false
+                    scanHint = "模擬進行中，已改為讀卡優先；若失敗請先停止模擬。"
+                }
             }
-            if (!ok) {
-                scanning = false
-                scanHint = "無法啟用讀卡（機型可能僅支援模擬／支付）。請手動輸入或用手機。"
+            onDispose {
+                NfcModeController.leaveReader(activity)
             }
-            onDispose { NfcReaderSession.disable(activity) }
         } else {
             onDispose { }
         }
@@ -108,6 +135,22 @@ fun AddCardScreen(
                     style = MaterialTheme.typography.caption2,
                 )
             }
+            if (readerPresent && !adapterEnabled) {
+                item {
+                    CompactChip(
+                        onClick = {
+                            val opened = NfcModeController.openNfcSettings(context)
+                            scanHint = if (opened) {
+                                "已開啟系統設定，請打開 NFC 後返回。"
+                            } else {
+                                "無法開啟設定，請到系統「連線／NFC」手動開啟。"
+                            }
+                        },
+                        label = { Text("開啟 NFC 設定") },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            }
             if (readerPresent) {
                 item {
                     Chip(
@@ -115,14 +158,15 @@ fun AddCardScreen(
                             Text(if (scanning) "掃描中…再貼一次卡" else "貼卡掃描")
                         },
                         onClick = {
+                            adapterEnabled = NfcModeController.adapterEnabled(context)
                             if (!adapterEnabled) {
-                                scanHint = "NFC 未開啟，請到系統設定開啟後再試。"
+                                scanHint = "NFC 未開啟，請先開啟系統 NFC。"
                                 return@Chip
                             }
                             scanning = !scanning
                             if (scanning) {
                                 scannedCard = null
-                                scanHint = "靠近卡片…（own_only）"
+                                scanHint = "靠近卡片…（讀卡時會暫停模擬）"
                             } else {
                                 scanHint = "已停止掃描"
                             }

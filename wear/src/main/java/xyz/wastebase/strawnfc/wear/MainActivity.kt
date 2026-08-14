@@ -26,6 +26,7 @@ import xyz.wastebase.strawnfc.data.Prefs
 import xyz.wastebase.strawnfc.hce.CapabilityProbe
 import xyz.wastebase.strawnfc.hce.StrawHostApduService
 import xyz.wastebase.strawnfc.model.StoredCard
+import xyz.wastebase.strawnfc.nfc.NfcModeController
 import xyz.wastebase.strawnfc.ui.AddCardScreen
 import xyz.wastebase.strawnfc.ui.BackupScreen
 import xyz.wastebase.strawnfc.ui.CardDetailScreen
@@ -88,6 +89,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onDestroy() {
         runCatching { unregisterReceiver(cardIngestReceiver) }
+        runCatching { NfcModeController.releaseAll(this) }
         super.onDestroy()
     }
 
@@ -308,12 +310,17 @@ fun StrawNfcWearApp(
             } else {
                 val probe = remember(card.id) { CapabilityProbe.probe(context) }
                 val status = CapabilityProbe.resolveEmulateStatus(card, probe)
+                val activity = context as? android.app.Activity
                 var sessionActive by remember(card.id) {
                     mutableStateOf(
                         StrawHostApduService.isActive(context) &&
                             StrawHostApduService.activeCardId(context) == card.id,
                     )
                 }
+                var nfcEnabled by remember(card.id) {
+                    mutableStateOf(NfcModeController.adapterEnabled(context))
+                }
+                var controlMessage by remember(card.id) { mutableStateOf<String?>(null) }
                 LaunchedEffect(card.id, status) {
                     if (card.emulateStatus != status) {
                         repository.upsert(
@@ -325,28 +332,83 @@ fun StrawNfcWearApp(
                         refresh()
                     }
                 }
-                NestedSwipeScreen(routeKey = "emulate-${card.id}", onDismissed = { goBack() }) {
+                NestedSwipeScreen(
+                    routeKey = "emulate-${card.id}",
+                    onDismissed = {
+                        if (sessionActive && activity != null) {
+                            NfcModeController.leaveHce(activity)
+                            sessionActive = false
+                        }
+                        goBack()
+                    },
+                ) {
                     EmulateScreen(
                         card = card,
                         probe = probe,
                         status = status,
                         sessionActive = sessionActive,
+                        nfcEnabled = nfcEnabled,
+                        controlMessage = controlMessage,
                         onStartNdefSession = {
                             val payload = card.ndefPayloadBase64
                             if (payload.isNullOrBlank()) return@EmulateScreen
-                            StrawHostApduService.activateNdef(
-                                context,
-                                card.id,
-                                card.name,
-                                payload,
-                            )
-                            sessionActive = true
+                            nfcEnabled = NfcModeController.adapterEnabled(context)
+                            if (activity == null) {
+                                controlMessage = "無法取得 Activity，無法設定偏好 HCE。"
+                                return@EmulateScreen
+                            }
+                            when (
+                                NfcModeController.enterHce(
+                                    activity,
+                                    card.id,
+                                    card.name,
+                                    payload,
+                                )
+                            ) {
+                                NfcModeController.EnterResult.Ok -> {
+                                    sessionActive = true
+                                    controlMessage = "已啟動 NDEF 模擬並請求偏好路由（讀卡已暫停）。"
+                                }
+                                NfcModeController.EnterResult.NfcOff -> {
+                                    sessionActive = false
+                                    nfcEnabled = false
+                                    controlMessage = "系統 NFC 關閉，無法模擬。"
+                                }
+                                NfcModeController.EnterResult.Failed -> {
+                                    sessionActive = false
+                                    controlMessage = "無法啟動模擬。"
+                                }
+                                NfcModeController.EnterResult.BusyEmulating -> {
+                                    sessionActive = true
+                                    controlMessage = "模擬工作階段已在進行。"
+                                }
+                            }
                         },
                         onStopSession = {
-                            StrawHostApduService.deactivate(context)
+                            if (activity != null) {
+                                NfcModeController.leaveHce(activity)
+                            } else {
+                                StrawHostApduService.deactivate(context)
+                            }
                             sessionActive = false
+                            controlMessage = "已停止模擬並解除偏好 HCE。"
                         },
-                        onBack = { route = WearRoute.Detail(card.id) },
+                        onOpenNfcSettings = {
+                            val opened = NfcModeController.openNfcSettings(context)
+                            nfcEnabled = NfcModeController.adapterEnabled(context)
+                            controlMessage = if (opened) {
+                                "已開啟系統設定，請打開 NFC 後返回。"
+                            } else {
+                                "無法開啟設定，請到系統「連線／NFC」手動開啟。"
+                            }
+                        },
+                        onBack = {
+                            if (sessionActive && activity != null) {
+                                NfcModeController.leaveHce(activity)
+                                sessionActive = false
+                            }
+                            route = WearRoute.Detail(card.id)
+                        },
                     )
                 }
             }

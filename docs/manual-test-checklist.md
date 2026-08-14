@@ -30,7 +30,8 @@
 | 3 | **手機掃描即寫入手錶** | Mobile「掃描並寫入手錶」→ 貼卡 → 自動寫入配對手錶（可改名稱後再按「再次寫入手錶」） | Wear 清單出現卡片；未連線手錶時顯示明確錯誤；DESFire／Classic 誠實標示；與 2b 並存 | ☐ |
 | 4 | **備份匯出再匯入** | Wear 或 Mobile：設定密碼匯出 `.strawnfc` → 清空／重裝後匯入 | round-trip 還原卡片；錯誤密碼失敗；不含 Classic 明金鑰 | ☐ |
 | 5 | **Tile 開啟預設卡** | 新增 Wear Tile → 點擊最愛卡 Tile | 開啟「準備模擬」畫面；**不**顯示「已開門」 | ☐ |
-| 6 | **NDEF HCE** | 有硬體：NDEF 卡標 `SUPPORTED` 時啟用 HCE，讀卡機讀 Type 4；無硬體：跑 `:shared:test` APDU + 模擬器 | APDU handler 正確；UI 不宣稱門禁已開 | ☐ 單元／☐ 實機 |
+| 6 | **NDEF HCE** | 有硬體：NDEF 卡標 `SUPPORTED` 時啟用 HCE，讀卡機讀 Type 4；無硬體：跑 `:shared:test` APDU + 模擬器 | APDU handler 正確；UI 不宣稱門禁已開；啟動模擬時暫停讀卡並請求 preferred HCE | ☐ 單元／☐ 實機 |
+| 6b | **NFC 互斥／設定** | Wear：模擬中再開「貼卡掃描」應停 HCE；NFC 關閉時可開系統設定 | 讀卡與模擬不同時佔用；無法強制開 NFC 無線電 | ☐ |
 | 7 | **DESFire unsupported** | 掃描／匯入 DESFire（或 IsoDep 摘要）→ 開 Emulate／詳情 | `PROTOCOL_UNSUPPORTED`；文案：只備份識別資訊，**不可克隆** | ☐ |
 
 ## 誠實矩陣抽查（驗收必看）
