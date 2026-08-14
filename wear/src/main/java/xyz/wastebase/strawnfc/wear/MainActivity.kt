@@ -3,20 +3,23 @@ package xyz.wastebase.strawnfc.wear
 import android.content.Intent
 import android.os.Bundle
 import android.util.Base64
+import android.util.Log
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.navigation.NavType
-import androidx.navigation.navArgument
+import androidx.compose.ui.Modifier
+import androidx.wear.compose.foundation.BasicSwipeToDismissBox
+import androidx.wear.compose.foundation.rememberSwipeToDismissBoxState
 import androidx.wear.compose.material.MaterialTheme
-import androidx.wear.compose.navigation.SwipeDismissableNavHost
-import androidx.wear.compose.navigation.composable
-import androidx.wear.compose.navigation.rememberSwipeDismissableNavController
 import xyz.wastebase.strawnfc.backup.BackupCodec
 import xyz.wastebase.strawnfc.data.CardRepository
 import xyz.wastebase.strawnfc.data.Prefs
@@ -36,31 +39,28 @@ import xyz.wastebase.strawnfc.ui.WearShell
 import java.util.UUID
 
 /**
- * Wear routes. Nested screens use [SwipeDismissableNavHost] so edge-swipe pops the
- * back stack instead of finishing the Activity (root cause of 「畫面消失」).
+ * Sealed routes without SwipeDismissableNavHost — that host crashed on launch when the
+ * WearNavigator backstack was empty on some devices. Nested screens use BasicSwipeToDismissBox.
  */
-object WearRoutes {
-    const val CONSENT = "consent"
-    const val LIST = "list"
-    const val ADD = "add"
-    const val BACKUP = "backup"
-    const val DETAIL = "detail/{cardId}"
-    const val EMULATE = "emulate/{cardId}"
-
-    fun detail(cardId: String) = "detail/$cardId"
-    fun emulate(cardId: String) = "emulate/$cardId"
+sealed interface WearRoute {
+    data object Consent : WearRoute
+    data object List : WearRoute
+    data object Add : WearRoute
+    data object Backup : WearRoute
+    data class Detail(val id: String) : WearRoute
+    data class Emulate(val id: String) : WearRoute
 }
 
 class MainActivity : ComponentActivity() {
-    private val intentState = mutableStateOf<Intent?>(null)
+    private val launchIntentState = mutableStateOf<Intent?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        intentState.value = intent
+        launchIntentState.value = intent
         val prefs = Prefs.create(this)
         val repository = CardRepository.create(this)
         setContent {
-            val launchIntent by intentState
+            val launchIntent by launchIntentState
             MaterialTheme {
                 WearShell {
                     StrawNfcWearApp(
@@ -76,7 +76,7 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
-        intentState.value = intent
+        launchIntentState.value = intent
     }
 
     companion object {
@@ -89,27 +89,70 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
+private fun NestedSwipeScreen(
+    routeKey: Any,
+    onDismissed: () -> Unit,
+    content: @Composable () -> Unit,
+) {
+    key(routeKey) {
+        val dismissState = rememberSwipeToDismissBoxState()
+        BasicSwipeToDismissBox(
+            onDismissed = onDismissed,
+            state = dismissState,
+        ) { isBackground ->
+            if (isBackground) {
+                Box(modifier = Modifier.fillMaxSize())
+            } else {
+                content()
+            }
+        }
+    }
+}
+
+@Composable
 fun StrawNfcWearApp(
     prefs: Prefs,
     repository: CardRepository,
     launchIntent: Intent? = null,
 ) {
-    val startDestination = if (prefs.consentAccepted) WearRoutes.LIST else WearRoutes.CONSENT
-    val navController = rememberSwipeDismissableNavController()
-    var cards by remember { mutableStateOf(repository.list()) }
+    var route by remember {
+        mutableStateOf<WearRoute>(
+            if (prefs.consentAccepted) WearRoute.List else WearRoute.Consent,
+        )
+    }
+    var cards by remember {
+        mutableStateOf(
+            try {
+                repository.list()
+            } catch (t: Throwable) {
+                Log.e("StrawNFC", "list() failed on start", t)
+                emptyList()
+            },
+        )
+    }
     var backupMessage by remember { mutableStateOf<String?>(null) }
     val context = androidx.compose.ui.platform.LocalContext.current
 
     fun refresh() {
-        cards = repository.list()
-    }
-
-    fun navigateToList() {
-        navController.navigate(WearRoutes.LIST) {
-            popUpTo(WearRoutes.CONSENT) { inclusive = true }
-            launchSingleTop = true
+        cards = try {
+            repository.list()
+        } catch (t: Throwable) {
+            Log.e("StrawNFC", "list() failed", t)
+            cards
         }
     }
+
+    fun goBack() {
+        route = when (val current = route) {
+            WearRoute.Consent, WearRoute.List -> current
+            WearRoute.Add, WearRoute.Backup -> WearRoute.List
+            is WearRoute.Detail -> WearRoute.List
+            is WearRoute.Emulate -> WearRoute.Detail(current.id)
+        }
+    }
+
+    val canSwipeBack = route !is WearRoute.Consent && route !is WearRoute.List
+    BackHandler(enabled = canSwipeBack) { goBack() }
 
     fun applyDeepLink(intent: Intent?) {
         if (intent == null || !prefs.consentAccepted) return
@@ -118,136 +161,110 @@ fun StrawNfcWearApp(
                 val id = intent.getStringExtra(MainActivity.EXTRA_CARD_ID).orEmpty()
                 val target = when {
                     id.isNotBlank() && repository.get(id) != null -> id
-                    else -> repository.list().firstOrNull { it.favorite }?.id
-                        ?: repository.list().firstOrNull()?.id
-                }
-                if (target != null) {
-                    navController.navigate(WearRoutes.emulate(target)) {
-                        launchSingleTop = true
+                    else -> try {
+                        repository.list().firstOrNull { it.favorite }?.id
+                            ?: repository.list().firstOrNull()?.id
+                    } catch (_: Throwable) {
+                        null
                     }
-                } else {
-                    navController.navigate(WearRoutes.LIST) { launchSingleTop = true }
                 }
+                if (target != null) route = WearRoute.Emulate(target)
             }
-            MainActivity.ROUTE_BACKUP -> {
-                navController.navigate(WearRoutes.BACKUP) { launchSingleTop = true }
-            }
-            MainActivity.ROUTE_LIST -> {
-                navController.navigate(WearRoutes.LIST) { launchSingleTop = true }
-            }
+            MainActivity.ROUTE_BACKUP -> route = WearRoute.Backup
+            MainActivity.ROUTE_LIST -> route = WearRoute.List
         }
     }
 
-    LaunchedEffect(launchIntent, prefs.consentAccepted) {
+    LaunchedEffect(launchIntent) {
         applyDeepLink(launchIntent)
     }
 
-    SwipeDismissableNavHost(
-        navController = navController,
-        startDestination = startDestination,
-    ) {
-        composable(WearRoutes.CONSENT) {
-            ConsentScreen(
-                onAccept = {
-                    prefs.acceptConsent()
-                    navigateToList()
-                    applyDeepLink(launchIntent)
+    when (val current = route) {
+        WearRoute.Consent -> ConsentScreen(
+            onAccept = {
+                prefs.acceptConsent()
+                route = WearRoute.List
+                applyDeepLink(launchIntent)
+            },
+        )
+
+        WearRoute.List -> CardListScreen(
+            cards = cards,
+            onAdd = { route = WearRoute.Add },
+            onBackup = { route = WearRoute.Backup },
+            onOpen = { card -> route = WearRoute.Detail(card.id) },
+        )
+
+        WearRoute.Add -> NestedSwipeScreen(routeKey = "add", onDismissed = { goBack() }) {
+            AddCardScreen(
+                onCancel = { route = WearRoute.List },
+                onSave = { form ->
+                    val now = System.currentTimeMillis()
+                    repository.upsert(
+                        StoredCard(
+                            id = UUID.randomUUID().toString(),
+                            name = form.name,
+                            type = CardType.UID_ONLY,
+                            uidHex = form.uidHex,
+                            createdAtEpochMs = now,
+                            updatedAtEpochMs = now,
+                            favorite = false,
+                            emulateStatus = EmulationCapability.DEVICE_UNSUPPORTED,
+                            notes = "手動 UID；僅備份，不宣稱可開門禁",
+                        ),
+                    )
+                    refresh()
+                    route = WearRoute.List
                 },
             )
         }
 
-        composable(WearRoutes.LIST) {
-            WearShell {
-                CardListScreen(
-                    cards = cards,
-                    onAdd = { navController.navigate(WearRoutes.ADD) },
-                    onBackup = { navController.navigate(WearRoutes.BACKUP) },
-                    onOpen = { card -> navController.navigate(WearRoutes.detail(card.id)) },
-                )
-            }
-        }
-
-        composable(WearRoutes.ADD) {
-            WearShell {
-                AddCardScreen(
-                    onCancel = { navController.popBackStack() },
-                    onSave = { form ->
-                        val now = System.currentTimeMillis()
-                        repository.upsert(
-                            StoredCard(
-                                id = UUID.randomUUID().toString(),
-                                name = form.name,
-                                type = CardType.UID_ONLY,
-                                uidHex = form.uidHex,
-                                createdAtEpochMs = now,
-                                updatedAtEpochMs = now,
-                                favorite = false,
-                                emulateStatus = EmulationCapability.DEVICE_UNSUPPORTED,
-                                notes = "手動 UID；僅備份，不宣稱可開門禁",
-                            ),
-                        )
+        WearRoute.Backup -> NestedSwipeScreen(routeKey = "backup", onDismissed = { goBack() }) {
+            BackupScreen(
+                cards = cards,
+                hasStoredBackup = !prefs.lastBackupBase64.isNullOrBlank(),
+                lastMessage = backupMessage,
+                onExport = { password ->
+                    try {
+                        val blob = BackupCodec.export(cards, password.toCharArray())
+                        prefs.lastBackupBase64 = Base64.encodeToString(blob, Base64.NO_WRAP)
+                        backupMessage = "已匯出 ${cards.size} 張（${blob.size} bytes）"
                         refresh()
-                        navController.popBackStack(WearRoutes.LIST, inclusive = false)
-                    },
-                )
-            }
+                    } catch (e: Exception) {
+                        backupMessage = "匯出失敗：${e.message}"
+                    }
+                },
+                onImportLast = { password ->
+                    val b64 = prefs.lastBackupBase64
+                    if (b64.isNullOrBlank()) {
+                        backupMessage = "沒有本機備份"
+                        return@BackupScreen
+                    }
+                    try {
+                        val envelope = BackupCodec.import(
+                            Base64.decode(b64, Base64.DEFAULT),
+                            password.toCharArray(),
+                        )
+                        envelope.cards.forEach { repository.upsert(it) }
+                        refresh()
+                        backupMessage = "已匯入 ${envelope.cards.size} 張"
+                    } catch (e: Exception) {
+                        backupMessage = "匯入失敗：${e.message}"
+                    }
+                },
+                onBack = { route = WearRoute.List },
+            )
         }
 
-        composable(WearRoutes.BACKUP) {
-            WearShell {
-                BackupScreen(
-                    cards = cards,
-                    hasStoredBackup = !prefs.lastBackupBase64.isNullOrBlank(),
-                    lastMessage = backupMessage,
-                    onExport = { password ->
-                        try {
-                            val blob = BackupCodec.export(cards, password.toCharArray())
-                            prefs.lastBackupBase64 = Base64.encodeToString(blob, Base64.NO_WRAP)
-                            backupMessage = "已匯出 ${cards.size} 張（${blob.size} bytes）"
-                            refresh()
-                        } catch (e: Exception) {
-                            backupMessage = "匯出失敗：${e.message}"
-                        }
-                    },
-                    onImportLast = { password ->
-                        val b64 = prefs.lastBackupBase64
-                        if (b64.isNullOrBlank()) {
-                            backupMessage = "沒有本機備份"
-                            return@BackupScreen
-                        }
-                        try {
-                            val envelope = BackupCodec.import(
-                                Base64.decode(b64, Base64.DEFAULT),
-                                password.toCharArray(),
-                            )
-                            envelope.cards.forEach { repository.upsert(it) }
-                            refresh()
-                            backupMessage = "已匯入 ${envelope.cards.size} 張"
-                        } catch (e: Exception) {
-                            backupMessage = "匯入失敗：${e.message}"
-                        }
-                    },
-                    onBack = { navController.popBackStack() },
-                )
-            }
-        }
-
-        composable(
-            route = WearRoutes.DETAIL,
-            arguments = listOf(navArgument("cardId") { type = NavType.StringType }),
-        ) { entry ->
-            val cardId = entry.arguments?.getString("cardId").orEmpty()
-            val card = cards.find { it.id == cardId } ?: repository.get(cardId)
-            // Never mutate navigation during composition — blank frame = 「畫面消失」.
-            LaunchedEffect(cardId, card == null) {
-                if (card == null) {
-                    navController.popBackStack(WearRoutes.LIST, inclusive = false)
-                }
+        is WearRoute.Detail -> {
+            val card = cards.find { it.id == current.id } ?: repository.get(current.id)
+            LaunchedEffect(current.id, card == null) {
+                if (card == null) route = WearRoute.List
             }
             if (card == null) {
                 WearLoadingPlaceholder("找不到卡片")
             } else {
-                WearShell {
+                NestedSwipeScreen(routeKey = "detail-${card.id}", onDismissed = { goBack() }) {
                     CardDetailScreen(
                         card = card,
                         onToggleFavorite = {
@@ -259,28 +276,22 @@ fun StrawNfcWearApp(
                             )
                             refresh()
                         },
-                        onEmulate = { navController.navigate(WearRoutes.emulate(card.id)) },
+                        onEmulate = { route = WearRoute.Emulate(card.id) },
                         onDelete = {
                             repository.delete(card.id)
                             refresh()
-                            navController.popBackStack(WearRoutes.LIST, inclusive = false)
+                            route = WearRoute.List
                         },
-                        onBack = { navController.popBackStack() },
+                        onBack = { route = WearRoute.List },
                     )
                 }
             }
         }
 
-        composable(
-            route = WearRoutes.EMULATE,
-            arguments = listOf(navArgument("cardId") { type = NavType.StringType }),
-        ) { entry ->
-            val cardId = entry.arguments?.getString("cardId").orEmpty()
-            val card = cards.find { it.id == cardId } ?: repository.get(cardId)
-            LaunchedEffect(cardId, card == null) {
-                if (card == null) {
-                    navController.popBackStack(WearRoutes.LIST, inclusive = false)
-                }
+        is WearRoute.Emulate -> {
+            val card = cards.find { it.id == current.id } ?: repository.get(current.id)
+            LaunchedEffect(current.id, card == null) {
+                if (card == null) route = WearRoute.List
             }
             if (card == null) {
                 WearLoadingPlaceholder("找不到卡片")
@@ -304,7 +315,7 @@ fun StrawNfcWearApp(
                         refresh()
                     }
                 }
-                WearShell {
+                NestedSwipeScreen(routeKey = "emulate-${card.id}", onDismissed = { goBack() }) {
                     EmulateScreen(
                         card = card,
                         probe = probe,
@@ -313,14 +324,19 @@ fun StrawNfcWearApp(
                         onStartNdefSession = {
                             val payload = card.ndefPayloadBase64
                             if (payload.isNullOrBlank()) return@EmulateScreen
-                            StrawHostApduService.activateNdef(context, card.id, card.name, payload)
+                            StrawHostApduService.activateNdef(
+                                context,
+                                card.id,
+                                card.name,
+                                payload,
+                            )
                             sessionActive = true
                         },
                         onStopSession = {
                             StrawHostApduService.deactivate(context)
                             sessionActive = false
                         },
-                        onBack = { navController.popBackStack() },
+                        onBack = { route = WearRoute.Detail(card.id) },
                     )
                 }
             }

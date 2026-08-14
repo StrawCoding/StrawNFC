@@ -4,20 +4,18 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class WearRoutesTest {
+class WearRouteTest {
     @Test
-    fun detailAndEmulatePathsEncodeCardId() {
-        assertEquals("detail/abc-123", WearRoutes.detail("abc-123"))
-        assertEquals("emulate/abc-123", WearRoutes.emulate("abc-123"))
-        assertTrue(WearRoutes.DETAIL.contains("{cardId}"))
-        assertTrue(WearRoutes.EMULATE.contains("{cardId}"))
+    fun detailAndEmulateCarryIds() {
+        assertEquals("a1", WearRoute.Detail("a1").id)
+        assertEquals("b2", WearRoute.Emulate("b2").id)
     }
 
     @Test
-    fun rootRoutesAreStable() {
-        assertEquals("consent", WearRoutes.CONSENT)
-        assertEquals("list", WearRoutes.LIST)
-        assertEquals("add", WearRoutes.ADD)
-        assertEquals("backup", WearRoutes.BACKUP)
+    fun rootRoutesAreObjects() {
+        assertTrue(WearRoute.Consent is WearRoute)
+        assertTrue(WearRoute.List is WearRoute)
+        assertTrue(WearRoute.Add is WearRoute)
+        assertTrue(WearRoute.Backup is WearRoute)
     }
 }

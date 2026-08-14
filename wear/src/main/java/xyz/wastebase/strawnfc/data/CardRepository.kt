@@ -41,10 +41,14 @@ class CardRepository(
     private fun load(): List<StoredCard> {
         val encrypted = store.read() ?: return emptyList()
         if (encrypted.isEmpty()) return emptyList()
-        val plaintext = vault.decrypt(encrypted)
-        val text = plaintext.toString(Charsets.UTF_8)
-        if (text.isBlank()) return emptyList()
-        return StoredCard.listFromJson(text)
+        return try {
+            val plaintext = vault.decrypt(encrypted)
+            val text = plaintext.toString(Charsets.UTF_8)
+            if (text.isBlank()) emptyList() else StoredCard.listFromJson(text)
+        } catch (_: Throwable) {
+            // Corrupt vault / keystore mismatch — prefer empty list over crash-on-launch.
+            emptyList()
+        }
     }
 
     private fun persist(cards: List<StoredCard>) {
