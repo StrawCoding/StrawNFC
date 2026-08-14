@@ -32,5 +32,17 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <service
+            android:name="xyz.wastebase.strawnfc.sync.CardListenerService"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.google.android.gms.wearable.DATA_CHANGED" />
+                <data
+                    android:host="*"
+                    android:pathPrefix="/strawnfc/cards"
+                    android:scheme="wear" />
+            </intent-filter>
+        </service>
     </application>
 </manifest>

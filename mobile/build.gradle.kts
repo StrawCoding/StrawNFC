@@ -42,6 +42,10 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+
+    testOptions {
+        unitTests.isReturnDefaultValues = true
+    }
 }
 
 dependencies {
@@ -50,5 +54,5 @@ dependencies {
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.activity.ktx)
     implementation(libs.play.services.wearable)
-    // Compose NFC scan UI lands in later SNFC stages; catalog keeps versions ready.
+    testImplementation(libs.junit)
 }

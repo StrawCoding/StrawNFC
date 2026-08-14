@@ -1,4 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">StrawNFC</string>
+    <string name="scan_title">掃描 NFC 卡</string>
+    <string name="scan_status_ready">請將自己擁有／已授權的卡片靠近手機背面</string>
+    <string name="scan_nfc_unavailable">此裝置無 NFC 硬體</string>
+    <string name="scan_status_scanned">已掃描 %1$s · UID %2$s</string>
+    <string name="scan_sync_to_wear">同步到手錶</string>
+    <string name="scan_status_syncing">同步中…</string>
+    <string name="scan_status_synced">已送出 %1$s</string>
+    <string name="scan_status_sync_failed">同步失敗：%1$s</string>
+    <string name="scan_toast_synced">已寫入 Wear Data Layer</string>
+    <string name="open_scan">開始掃描</string>
 </resources>
