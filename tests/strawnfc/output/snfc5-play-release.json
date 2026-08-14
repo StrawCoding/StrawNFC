@@ -1,0 +1,90 @@
+{
+  "schema": "strawnfc-snfc5-play-release/v1",
+  "stage": "snfc5-play-release",
+  "status": "PASS",
+  "product": "StrawNFC",
+  "version": "0.1.0.11",
+  "generated_at": "2026-08-14T08:19:30Z",
+  "package": "xyz.wastebase.strawnfc",
+  "branch": "main",
+  "tasks": [
+    "play_signing_from_env",
+    "signed_mobile_bundleRelease",
+    "wear_independent_aab_same_package",
+    "fastlane_internal_testing",
+    "github_actions_v_star_tag",
+    "docs_play_release"
+  ],
+  "claims": {
+    "legal_scope": "own_only",
+    "stock_hce_equals_uid_clone": false,
+    "uid_spoof_cracking": false,
+    "door_unlocked_copy": false,
+    "desfire_cloneable": false,
+    "play_listing_changes_own_only": false,
+    "gmail_password_used_as_play_api": false,
+    "keystore_committed": false,
+    "play_json_committed": false,
+    "worker_marked_hermes_pass": false,
+    "worker_pushed_play_upload_tag": false
+  },
+  "artifacts": {
+    "workflow": ".github/workflows/play-internal-release.yml",
+    "fastlane_fastfile": "fastlane/Fastfile",
+    "fastlane_lane": "internal_testing",
+    "fastlane_track": "internal",
+    "play_docs": "docs/play-release.md",
+    "mobile_aab": "mobile/build/outputs/bundle/release/mobile-release.aab",
+    "wear_aab": "wear/build/outputs/bundle/release/wear-release.aab",
+    "mobile_versionName": "0.1.0.11",
+    "wear_versionName": "0.1.0.11",
+    "mobile_versionCode": 20022,
+    "wear_versionCode": 20023,
+    "applicationId": "xyz.wastebase.strawnfc"
+  },
+  "signing": {
+    "source": "env ANDROID_KEYSTORE_FILE / ANDROID_KEYSTORE_PASSWORD / ANDROID_KEY_ALIAS / ANDROID_KEY_PASSWORD (CI secrets; local Hermes-managed upload keystore, not in git)",
+    "alias_expected": "strawnfc-upload",
+    "store_type": "jks",
+    "upload_cert_sha256": "EA:6B:C8:F8:4A:08:B2:6A:99:24:15:FE:32:91:47:4A:4E:B0:3C:BE:1F:7F:20:C5:EE:93:34:B0:F8:5A:9F:B2",
+    "fingerprint_matches_hermes_upload_cert": true,
+    "keystore_overwritten": false,
+    "ci_restore": "ANDROID_KEYSTORE_BASE64 decoded to ANDROID_KEYSTORE_FILE in play-internal-release.yml"
+  },
+  "play_upload": {
+    "ready": true,
+    "executed_this_stage": false,
+    "blocked_on": "PLAY_SERVICE_ACCOUNT_JSON GitHub secret (service-account JSON; Gmail password cannot be used)",
+    "workflow_when_json_missing": "signed AABs still built and uploaded as Actions artifacts / GitHub Release; Restore Play service account step fails with an explicit error"
+  },
+  "phone_plus_wear": {
+    "strategy": "two independent AABs, same applicationId, unique versionCodes (phone even / wear odd)",
+    "wear_embedded_in_phone_apk": false,
+    "wear_feature": "android.hardware.type.watch + com.google.android.wearable.standalone=true"
+  },
+  "tests": {
+    "shared_unit_test": "PASS",
+    "mobile_bundleRelease_signed": "PASS",
+    "wear_bundleRelease_signed": "PASS",
+    "mobile_bundleRelease_unsigned_fails": "PASS",
+    "jarsigner_mobile_aab": "PASS",
+    "pipeline_script_local": "PASS",
+    "commands": [
+      "export ANDROID_HOME=/opt/android-sdk ANDROID_KEYSTORE_FILE ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD; ./gradlew :mobile:bundleRelease :wear:bundleRelease :shared:test --no-daemon",
+      "jarsigner -verify mobile/build/outputs/bundle/release/mobile-release.aab",
+      "test -f .github/workflows/play-internal-release.yml && test -f docs/play-release.md && test -f fastlane/Fastfile",
+      "bash /root/.hermes/scripts/pipelines/strawnfc-snfc5-play-release.sh"
+    ]
+  },
+  "failures": [],
+  "notes": [
+    "SNFC5: Play internal pipeline aligned with StrawMoneyBook (signing env, Fastlane edit-conflict retry, v* tag) adapted to :mobile / :wear",
+    "Primary upload artifact is :mobile:bundleRelease AAB; Wear is a second AAB for Play Phone + Wear, same package xyz.wastebase.strawnfc",
+    "Did not overwrite Hermes upload keystore; AAB cert SHA-256 matches existing upload certificate",
+    "Did not set PLAY_SERVICE_ACCOUNT_JSON, did not push a v* Play upload tag, did not mark Hermes stage PASS",
+    "own_only / honest HCE matrix unchanged by store listing",
+    "Worker local verify PASS; final stage mark PASS is Hermes trigger-verify + OpenCode only",
+    "git_head omitted to avoid self-hash recursion; use git rev-parse HEAD at verify time"
+  ],
+  "evidence_base_commit": "75c0f492d0e016eb732557c8f4bf6f4a4c07351d"
+}

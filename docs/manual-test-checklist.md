@@ -17,6 +17,8 @@
 | Wear assemble | `./gradlew :wear:assembleDebug` | 產出 `wear-debug.apk` |
 | Mobile assemble | `./gradlew :mobile:assembleDebug` | 產出 `mobile-debug.apk` |
 | GitHub Actions | `.github/workflows/android-ci.yml` | assemble + shared tests |
+| Play 管線文件 | `docs/play-release.md` + `.github/workflows/play-internal-release.yml` | 有 Fastlane `internal_testing`；keystore 不在 git |
+| Signed mobile AAB | `./gradlew :mobile:bundleRelease`（需 signing env） | `mobile/build/outputs/bundle/release/mobile-release.aab` |
 
 ## 手動項目（必跑才算完成）
 

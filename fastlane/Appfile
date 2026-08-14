@@ -1,0 +1,4 @@
+# StrawNFC Play — package is always xyz.wastebase.strawnfc (Phone + Wear).
+# json_key_file comes from PLAY_JSON_KEY_PATH (CI secret restore); never commit the JSON.
+package_name(ENV.fetch("ANDROID_PACKAGE_NAME", "xyz.wastebase.strawnfc"))
+json_key_file(ENV["PLAY_JSON_KEY_PATH"]) if ENV["PLAY_JSON_KEY_PATH"].to_s.strip != ""

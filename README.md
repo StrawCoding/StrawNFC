@@ -34,6 +34,8 @@ export ANDROID_HOME=/opt/android-sdk
 ./gradlew :wear:assembleDebug :mobile:assembleDebug
 ```
 
+Play 內部測試上架（signing → signed AAB → Fastlane `internal_testing` → `v*` tag workflow）見 [`docs/play-release.md`](docs/play-release.md)。上架不改變 `own_only` 與能力矩陣。
+
 ## 能力摘要
 
 | 類型 | 讀取 | 儲存 | 模擬 |

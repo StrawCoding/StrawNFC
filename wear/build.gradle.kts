@@ -1,17 +1,17 @@
+import java.io.File
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
 }
 
-val strawVersion: String = rootProject.file("VERSION").readText().trim()
-val versionParts = strawVersion.split(".")
-val computedVersionCode: Int =
-    versionParts.getOrNull(0)?.toIntOrNull()?.times(1_000_000)
-        ?.plus(versionParts.getOrNull(1)?.toIntOrNull()?.times(10_000) ?: 0)
-        ?.plus(versionParts.getOrNull(2)?.toIntOrNull()?.times(100) ?: 0)
-        ?.plus(versionParts.getOrNull(3)?.toIntOrNull() ?: 0)
-        ?: 1
+extra["strawFormFactor"] = 1 // wear — odd Play versionCode (same package as phone)
+apply(from = rootProject.file("gradle/release-env.gradle.kts"))
+
+val strawVersion: String = extra["strawVersionName"] as String
+val computedVersionCode: Int = extra["strawVersionCode"] as Int
+val hasReleaseSigning: Boolean = extra["strawHasReleaseSigning"] as Boolean
 
 android {
     namespace = "xyz.wastebase.strawnfc.wear"
@@ -23,6 +23,27 @@ android {
         targetSdk = libs.versions.targetSdk.get().toInt()
         versionCode = computedVersionCode
         versionName = strawVersion
+    }
+
+    signingConfigs {
+        if (hasReleaseSigning) {
+            create("release") {
+                storeFile = extra["strawSigningStoreFile"] as File
+                storePassword = extra["strawSigningStorePassword"] as String
+                keyAlias = extra["strawSigningKeyAlias"] as String
+                keyPassword = extra["strawSigningKeyPassword"] as String
+                storeType = extra["strawSigningStoreType"] as String
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            isMinifyEnabled = false
+            if (hasReleaseSigning) {
+                signingConfig = signingConfigs.getByName("release")
+            }
+        }
     }
 
     buildFeatures {
@@ -47,6 +68,18 @@ android {
 
     testOptions {
         unitTests.isReturnDefaultValues = true
+    }
+}
+
+arrayOf("bundleRelease", "assembleRelease").forEach { taskName ->
+    tasks.matching { it.name == taskName }.configureEach {
+        doFirst {
+            check(hasReleaseSigning) {
+                "Release signing is not configured. Export ANDROID_KEYSTORE_FILE, " +
+                    "ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD " +
+                    "(see docs/play-release.md). Do not commit the keystore."
+            }
+        }
     }
 }
 

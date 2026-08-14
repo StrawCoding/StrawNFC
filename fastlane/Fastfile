@@ -1,0 +1,207 @@
+require "fileutils"
+
+default_platform(:android)
+
+REPO_ROOT = File.expand_path("..", __dir__)
+PENDING_RELEASE_NOTES_PATH = File.join(REPO_ROOT, "release-notes.pending.md")
+CHANGELOGS_DIR = File.join(__dir__, "metadata", "android", "zh-TW", "changelogs")
+PLAY_EDIT_CONFLICT_MESSAGE = "A change was made to the application outside of this Edit, please create a new edit."
+PLAY_UPLOAD_MAX_ATTEMPTS = 3
+PLAY_UPLOAD_RETRY_DELAY_SECONDS = 15
+PLAY_CONSOLE_MAX_LENGTH = 500
+DEFAULT_PACKAGE_NAME = "xyz.wastebase.strawnfc"
+DEFAULT_MOBILE_AAB = "mobile/build/outputs/bundle/release/mobile-release.aab"
+DEFAULT_WEAR_AAB = "wear/build/outputs/bundle/release/wear-release.aab"
+
+def require_env!(key)
+  value = ENV[key].to_s.strip
+  UI.user_error!("Missing required environment variable: #{key}") if value.empty?
+  value
+end
+
+def resolve_existing_path(explicit_path)
+  return "" if explicit_path.to_s.strip.empty?
+
+  absolute = File.expand_path(explicit_path, REPO_ROOT)
+  File.exist?(absolute) ? absolute : ""
+end
+
+def glob_last(pattern)
+  Dir.glob(File.join(REPO_ROOT, pattern)).sort.last.to_s
+end
+
+def resolve_mobile_aab(explicit_path)
+  resolved = resolve_existing_path(explicit_path)
+  return resolved unless resolved.empty?
+
+  found = glob_last("mobile/build/outputs/bundle/**/*.aab")
+  return found unless found.empty?
+
+  explicit_path.to_s.strip.empty? ? File.join(REPO_ROOT, DEFAULT_MOBILE_AAB) : File.expand_path(explicit_path, REPO_ROOT)
+end
+
+def resolve_wear_aab(explicit_path)
+  resolved = resolve_existing_path(explicit_path)
+  return resolved unless resolved.empty?
+
+  glob_last("wear/build/outputs/bundle/**/*.aab")
+end
+
+def resolve_mapping_path(explicit_path)
+  resolved = resolve_existing_path(explicit_path)
+  return resolved unless resolved.empty?
+
+  glob_last("mobile/build/outputs/mapping/**/mapping.txt")
+end
+
+def play_edit_conflict?(error)
+  error.message.to_s.include?(PLAY_EDIT_CONFLICT_MESSAGE)
+end
+
+def upload_to_play_store_with_edit_retry!(options)
+  attempts = 0
+
+  begin
+    attempts += 1
+    upload_to_play_store(options)
+  rescue StandardError => error
+    raise unless play_edit_conflict?(error) && attempts < PLAY_UPLOAD_MAX_ATTEMPTS
+
+    UI.important("Google Play edit was changed outside this upload; retrying with a new edit (attempt #{attempts + 1}/#{PLAY_UPLOAD_MAX_ATTEMPTS})")
+    sleep(PLAY_UPLOAD_RETRY_DELAY_SECONDS)
+    retry
+  end
+end
+
+def version_parts(version_name)
+  clean = version_name.to_s.strip.split("-").first.to_s
+  parts = clean.split(".").map(&:to_i)
+  {
+    major: parts[0] || 0,
+    minor: parts[1] || 0,
+    patch: parts[2] || 0,
+    preview: parts[3] || 0
+  }
+end
+
+# Must match gradle/release-env.gradle.kts
+def base_version_code(version_name)
+  p = version_parts(version_name)
+  p[:major] * 1_000_000 + p[:minor] * 10_000 + p[:patch] * 100 + p[:preview]
+end
+
+def phone_version_code(version_name)
+  base_version_code(version_name) * 2
+end
+
+def wear_version_code(version_name)
+  base_version_code(version_name) * 2 + 1
+end
+
+def read_pending_note_lines(notes_path)
+  return [] unless File.exist?(notes_path)
+
+  lines = []
+  File.readlines(notes_path).each do |line|
+    stripped = line.strip
+    break if stripped == "---"
+    next if stripped.empty? || stripped.start_with?("#")
+
+    lines << stripped
+  end
+  lines
+end
+
+def format_for_play_console(lines, max_length = PLAY_CONSOLE_MAX_LENGTH)
+  joined = lines.join("\n")
+  joined.length <= max_length ? joined : joined.slice(0, max_length)
+end
+
+def prepare_play_changelogs(version_name, notes_path = PENDING_RELEASE_NOTES_PATH)
+  return false if version_name.to_s.strip.empty?
+  return false unless File.exist?(notes_path)
+
+  lines = read_pending_note_lines(notes_path)
+  return false if lines.empty?
+
+  changelog = format_for_play_console(lines)
+  FileUtils.mkdir_p(CHANGELOGS_DIR)
+  [phone_version_code(version_name), wear_version_code(version_name)].uniq.each do |code|
+    File.write(File.join(CHANGELOGS_DIR, "#{code}.txt"), changelog)
+  end
+  UI.message("[release-notes] Loaded #{lines.length} line(s) for version codes phone=#{phone_version_code(version_name)} wear=#{wear_version_code(version_name)} (#{changelog.length}/#{PLAY_CONSOLE_MAX_LENGTH} chars)")
+  true
+end
+
+def collect_aab_paths
+  requested_mobile = ENV.fetch("AAB_PATH", DEFAULT_MOBILE_AAB).to_s.strip
+  requested_wear = ENV.fetch("WEAR_AAB_PATH", DEFAULT_WEAR_AAB).to_s.strip
+  mobile_aab = resolve_mobile_aab(requested_mobile)
+  wear_aab = resolve_wear_aab(requested_wear)
+
+  UI.user_error!("Mobile AAB not found at #{mobile_aab}. Build with ./gradlew :mobile:bundleRelease and signing env (docs/play-release.md).") unless File.exist?(mobile_aab)
+
+  aabs = [mobile_aab]
+  if !wear_aab.empty? && File.exist?(wear_aab)
+    aabs << wear_aab
+    UI.message("Including Wear AAB for Phone + Wear listing: #{wear_aab}")
+  else
+    UI.important("Wear AAB not found — uploading phone bundle only. Play Phone + Wear listing can add wear/build/outputs/bundle/release/wear-release.aab later (same package, odd versionCode).")
+  end
+  aabs
+end
+
+def play_upload_options(aabs, json_key_path, package_name, track, mapping_path, has_changelogs)
+  mapping_exists = !mapping_path.empty? && File.exist?(mapping_path)
+  release_status = ENV.fetch("PLAY_RELEASE_STATUS", "completed").to_s.strip
+  UI.user_error!("PLAY_RELEASE_STATUS must not be empty") if release_status.empty?
+
+  options = {
+    package_name: package_name,
+    json_key: json_key_path,
+    track: track,
+    release_status: release_status,
+    skip_upload_apk: true,
+    skip_upload_metadata: true,
+    skip_upload_images: true,
+    skip_upload_screenshots: true,
+    skip_upload_changelogs: !has_changelogs
+  }
+  options[:mapping] = mapping_path if mapping_exists
+  if aabs.length > 1
+    options[:aab_paths] = aabs
+  else
+    options[:aab] = aabs.first
+  end
+  options
+end
+
+platform :android do
+  desc "Submit the signed release AAB(s) to Google Play internal testing (track=internal)"
+  lane :internal_testing do
+    package_name = ENV.fetch("ANDROID_PACKAGE_NAME", DEFAULT_PACKAGE_NAME).to_s.strip
+    package_name = DEFAULT_PACKAGE_NAME if package_name.empty?
+    json_key_path = require_env!("PLAY_JSON_KEY_PATH")
+    play_track = ENV.fetch("PLAY_INTERNAL_TRACK", "internal").to_s.strip
+    requested_mapping_path = ENV.fetch("PLAY_MAPPING_PATH", "").to_s.strip
+
+    UI.user_error!("PLAY_JSON_KEY_PATH file not found at #{json_key_path}. Set GitHub secret PLAY_SERVICE_ACCOUNT_JSON (not a Gmail password). See docs/play-release.md.") unless File.exist?(json_key_path)
+    UI.user_error!("PLAY_INTERNAL_TRACK must not be empty") if play_track.empty?
+
+    aabs = collect_aab_paths
+    mapping_path = resolve_mapping_path(requested_mapping_path)
+
+    ci_version_name = ENV.fetch("CI_VERSION_NAME", "").strip
+    UI.message("[release-notes] Reading pending release notes...")
+    has_changelogs = prepare_play_changelogs(ci_version_name)
+    if has_changelogs
+      UI.message("[release-notes] Release notes ready — will upload changelogs to Google Play.")
+    else
+      UI.important("[release-notes] No release notes found — skipping changelog upload.")
+    end
+
+    upload_to_play_store_with_edit_retry!(
+      play_upload_options(aabs, json_key_path, package_name, play_track, mapping_path, has_changelogs)
+    )
+  end
+end
