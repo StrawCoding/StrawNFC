@@ -4,16 +4,28 @@
   "status": "PASS",
   "product": "StrawNFC",
   "version": "0.1.0.2",
-  "generated_at": "2026-08-14T05:31:00Z",
+  "generated_at": "2026-08-14T05:31:26Z",
   "package": "xyz.wastebase.strawnfc",
   "branch": "main",
-  "modules": ["shared", "mobile", "wear"],
+  "remote": null,
+  "push": "skipped_no_remote",
+  "base_git_head": "47baefafca8ed95b66b44ad2e7d82c87e119f915",
+  "modules": [
+    "shared",
+    "mobile",
+    "wear"
+  ],
   "claims": {
     "legal_scope": "own_only",
     "stock_hce_equals_uid_clone": false,
     "desfire_cloneable": false,
     "thin_mobile_companion": true,
-    "card_types_in_matrix": ["UID_ONLY", "MIFARE_CLASSIC", "NDEF", "DESFIRE"]
+    "card_types_in_matrix": [
+      "UID_ONLY",
+      "MIFARE_CLASSIC",
+      "NDEF",
+      "DESFIRE"
+    ]
   },
   "artifacts": {
     "version_file": "VERSION",
@@ -36,6 +48,7 @@
   "notes": [
     "SNFC0 scaffold only; Compose/HCE/scan land in later stages",
     "Worker evidence JSON status=PASS for Hermes trigger-verify; final mark PASS is Hermes/OpenCode only",
-    "No git remote configured at stage time — local commit only unless remote added"
-  ]
+    "No git remote — local commits on main only"
+  ],
+  "git_head": "ac874185b81dd965831a19ae19fe679da5aee515"
 }
