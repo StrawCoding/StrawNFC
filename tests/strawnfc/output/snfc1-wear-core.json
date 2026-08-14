@@ -1,0 +1,57 @@
+{
+  "schema": "strawnfc-snfc1-wear-core/v1",
+  "stage": "snfc1-wear-core",
+  "status": "PASS",
+  "product": "StrawNFC",
+  "version": "0.1.0.3",
+  "generated_at": "2026-08-14T05:40:58Z",
+  "package": "xyz.wastebase.strawnfc",
+  "branch": "main",
+  "remote": null,
+  "push": "skipped_no_remote",
+  "base_git_head": "88f7760c0bcac230f1e0663219b0366aa6ada67e",
+  "tasks": [
+    "Task3_shared_StoredCard_model",
+    "Task4_wear_encrypted_repository",
+    "Task5_consent_gate",
+    "Task6_card_list_manual_uid"
+  ],
+  "claims": {
+    "legal_scope": "own_only",
+    "stock_hce_equals_uid_clone": false,
+    "desfire_cloneable": false,
+    "manual_uid_emulate_default": "DEVICE_UNSUPPORTED",
+    "consent_required_before_main": true
+  },
+  "artifacts": {
+    "stored_card": "shared/src/main/java/xyz/wastebase/strawnfc/model/StoredCard.kt",
+    "card_type": "shared/src/main/java/xyz/wastebase/strawnfc/model/CardType.kt",
+    "emulation_capability": "shared/src/main/java/xyz/wastebase/strawnfc/model/EmulationCapability.kt",
+    "card_repository": "wear/src/main/java/xyz/wastebase/strawnfc/data/CardRepository.kt",
+    "crypto_vault": "wear/src/main/java/xyz/wastebase/strawnfc/data/CryptoVault.kt",
+    "android_keystore_vault": "wear/src/main/java/xyz/wastebase/strawnfc/data/AndroidKeystoreCryptoVault.kt",
+    "prefs": "wear/src/main/java/xyz/wastebase/strawnfc/data/Prefs.kt",
+    "consent_screen": "wear/src/main/java/xyz/wastebase/strawnfc/ui/ConsentScreen.kt",
+    "card_list_screen": "wear/src/main/java/xyz/wastebase/strawnfc/ui/CardListScreen.kt",
+    "add_card_screen": "wear/src/main/java/xyz/wastebase/strawnfc/ui/AddCardScreen.kt",
+    "card_detail_screen": "wear/src/main/java/xyz/wastebase/strawnfc/ui/CardDetailScreen.kt",
+    "wear_apk": "wear/build/outputs/apk/debug/wear-debug.apk"
+  },
+  "tests": {
+    "shared_unit_test": "PASS",
+    "wear_unit_test": "PASS",
+    "assemble_wear_debug": "PASS",
+    "commands": [
+      "export ANDROID_HOME=/opt/android-sdk; ./gradlew :shared:test :wear:testDebugUnitTest :wear:assembleDebug --no-daemon"
+    ]
+  },
+  "failures": [],
+  "notes": [
+    "SNFC1 implements shared model, encrypted CardRepository, consent gate, CardList/Add/Detail with manual UID",
+    "Manual UID cards default emulateStatus=DEVICE_UNSUPPORTED; UI does not claim door unlock",
+    "Worker evidence JSON status=PASS for Hermes trigger-verify; final mark PASS is Hermes/OpenCode only",
+    "No git remote — local commits on main only",
+    "git_head omitted to avoid self-hash recursion; use git rev-parse HEAD at verify time"
+  ],
+  "evidence_base_commit": "88f7760c0bcac230f1e0663219b0366aa6ada67e"
+}

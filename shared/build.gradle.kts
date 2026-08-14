@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 val strawVersion: String = rootProject.file("VERSION").readText().trim()
@@ -11,7 +12,6 @@ android {
 
     defaultConfig {
         minSdk = libs.versions.minSdkMobile.get().toInt()
-        // Expose VERSION to consumers via BuildConfig field if needed later
         buildConfigField("String", "STRAW_VERSION", "\"$strawVersion\"")
     }
 
@@ -27,8 +27,14 @@ android {
     kotlinOptions {
         jvmTarget = "17"
     }
+
+    testOptions {
+        unitTests.isIncludeAndroidResources = false
+    }
 }
 
 dependencies {
     implementation(libs.androidx.core.ktx)
+    api(libs.kotlinx.serialization.json)
+    testImplementation(libs.junit)
 }
