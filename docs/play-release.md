@@ -68,6 +68,23 @@ export ANDROID_KEY_PASSWORD
 
 CI 可用 `CI_VERSION_NAME`（由 tag `v*` 去掉 `v`）覆寫 `versionName`。
 
+### Target SDK（Play 上傳硬門檻）
+
+失敗範例（tag `v0.1.0.13`，run [31811243405](https://github.com/StrawCoding/StrawNFC/actions/runs/31811243405)）：
+
+`Google Api Error: Invalid request - Target SDK of artifact is too low: 20026.`
+
+此處 **`20026` 是 phone AAB 的 versionCode**（`0.1.0.13` → base `10013` → phone `*2`），不是 targetSdk 數值。真正問題是當時 `targetSdk=34`，低於 Play 對手機／平板更新的最低要求。
+
+現行（見 [Play Console Help — Target API level](https://support.google.com/googleplay/android-developer/answer/11926878)）：
+
+| 表單因素 | 更新／新版上傳最低 targetSdk | 生效日 |
+|----------|------------------------------|--------|
+| Phone／tablet（本 listing 的 `:mobile`） | **API 35**；自 **2026-08-31** 起 **API 36** | 35：2025-08-31；36：2026-08-31 |
+| Wear OS（`:wear`） | **API 34**；自 **2026-08-31** 起 **API 35+** | 34：2025-08-31；35：2026-08-31 |
+
+`gradle/libs.versions.toml` 將 `compileSdk`／`targetSdk` 設為 **36**（兩模組共用），並使用 **AGP ≥ 8.9.1**（官方對 API 36 的最低 AGP）。勿為通過上傳而拆掉 wear 或改 package name。
+
 ## Fastlane / Ruby
 
 - 目錄：repo 根 `fastlane/Fastfile`、`Gemfile`、`Gemfile.lock`

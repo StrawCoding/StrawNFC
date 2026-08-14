@@ -1,0 +1,86 @@
+{
+  "schema": "strawnfc-snfc7-play-targetsdk/v1",
+  "stage": "snfc7-play-targetsdk",
+  "status": "PASS",
+  "product": "StrawNFC",
+  "version": "0.1.0.14",
+  "generated_at": "2026-08-14T15:11:01Z",
+  "commit_before_push": "pending",
+  "package": "xyz.wastebase.strawnfc",
+  "branch": "main",
+  "failed_run": {
+    "url": "https://github.com/StrawCoding/StrawNFC/actions/runs/31811243405",
+    "workflow": "play-internal-release",
+    "tag": "v0.1.0.13",
+    "failed_step": "Publish to Google Play internal testing",
+    "error_summary": "Google Api Error: Invalid request - Target SDK of artifact is too low: 20026. (20026 = phone versionCode for 0.1.0.13; actual targetSdk was 34, below Play phone minimum API 35 / upcoming API 36.)"
+  },
+  "fix_summary": "Raised compileSdk/targetSdk 34→36 in gradle/libs.versions.toml; upgraded AGP 8.7.3→8.9.1 (required for API 36). Documented Play Target SDK thresholds and the misleading versionCode-in-error message in docs/play-release.md. Root cause: Play rejects phone AAB with targetSdk 34; Wear listing kept.",
+  "sdk": {
+    "compileSdk": 36,
+    "targetSdk": 36,
+    "minSdkMobile": 26,
+    "minSdkWear": 30,
+    "agp": "8.9.1"
+  },
+  "aab_manifest_check": {
+    "mobile": {
+      "path": "mobile/build/outputs/bundle/release/mobile-release.aab",
+      "package": "xyz.wastebase.strawnfc",
+      "versionName": "0.1.0.14",
+      "versionCode": 20028,
+      "minSdkVersion": 26,
+      "targetSdkVersion": 36,
+      "compileSdkVersion": 36
+    },
+    "wear": {
+      "path": "wear/build/outputs/bundle/release/wear-release.aab",
+      "package": "xyz.wastebase.strawnfc",
+      "versionName": "0.1.0.14",
+      "versionCode": 20029,
+      "minSdkVersion": 30,
+      "targetSdkVersion": 36,
+      "compileSdkVersion": 36
+    }
+  },
+  "claims": {
+    "legal_scope": "own_only",
+    "stock_hce_equals_uid_clone": false,
+    "uid_spoof_cracking": false,
+    "desfire_cloneable": false,
+    "keystore_overwritten": false,
+    "secrets_committed": false,
+    "wear_module_removed": false,
+    "package_renamed": false,
+    "worker_pushed_v_star_tag": false,
+    "worker_marked_hermes_pass": false
+  },
+  "artifacts": {
+    "workflow": ".github/workflows/play-internal-release.yml",
+    "libs_versions": "gradle/libs.versions.toml",
+    "play_docs": "docs/play-release.md",
+    "mobile_aab": "mobile/build/outputs/bundle/release/mobile-release.aab",
+    "wear_aab": "wear/build/outputs/bundle/release/wear-release.aab",
+    "version_file": "VERSION"
+  },
+  "tests": {
+    "shared_unit_test": "PASS",
+    "mobile_bundle_release_signed": "PASS",
+    "wear_bundle_release_signed": "PASS",
+    "bundletool_target_sdk_36": "PASS",
+    "commands": [
+      "export ANDROID_HOME=/opt/android-sdk ANDROID_KEYSTORE_FILE=… ANDROID_KEYSTORE_PASSWORD=… ANDROID_KEY_ALIAS=strawnfc-upload ANDROID_KEY_PASSWORD=…",
+      "./gradlew :shared:test :mobile:bundleRelease :wear:bundleRelease --no-daemon",
+      "java -jar bundletool.jar dump manifest --bundle=mobile/build/outputs/bundle/release/mobile-release.aab",
+      "java -jar bundletool.jar dump manifest --bundle=wear/build/outputs/bundle/release/wear-release.aab"
+    ]
+  },
+  "pushed_main": false,
+  "notes": [
+    "Do not cut a new v* tag from this worker; Hermes will re-tag after push.",
+    "Error text 'too low: 20026' refers to the rejected artifact versionCode, not the numeric targetSdk.",
+    "Phone+Wear same listing retained; both AABs now declare targetSdkVersion=36.",
+    "Worker evidence status=PASS is stage completion signal; final Hermes mark PASS only after trigger-verify + OpenCode acceptance."
+  ],
+  "failures": []
+}
