@@ -74,7 +74,7 @@
       "java -jar bundletool.jar dump manifest --bundle=wear/build/outputs/bundle/release/wear-release.aab"
     ]
   },
-  "pushed_main": false,
+  "pushed_main": true,
   "notes": [
     "Do not cut a new v* tag from this worker; Hermes will re-tag after push.",
     "Error text 'too low: 20026' refers to the rejected artifact versionCode, not the numeric targetSdk.",
@@ -82,5 +82,5 @@
     "Worker evidence status=PASS is stage completion signal; final Hermes mark PASS only after trigger-verify + OpenCode acceptance."
   ],
   "failures": [],
-  "commit": "52afdd3"
+  "commit": "1e807e3"
 }
