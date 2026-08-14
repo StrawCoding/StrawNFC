@@ -53,24 +53,45 @@ sealed interface WearRoute {
 
 class MainActivity : ComponentActivity() {
     private val launchIntentState = mutableStateOf<Intent?>(null)
+    private val cardsEpochState = mutableStateOf(0L)
+
+    private val cardIngestReceiver = object : android.content.BroadcastReceiver() {
+        override fun onReceive(context: android.content.Context?, intent: android.content.Intent?) {
+            cardsEpochState.value = System.currentTimeMillis()
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         launchIntentState.value = intent
         val prefs = Prefs.create(this)
         val repository = CardRepository.create(this)
+        val filter = android.content.IntentFilter(xyz.wastebase.strawnfc.sync.CardIngestEvents.ACTION_CARD_UPSERTED)
+        if (android.os.Build.VERSION.SDK_INT >= 33) {
+            registerReceiver(cardIngestReceiver, filter, android.content.Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            @Suppress("UnspecifiedRegisterReceiverFlag")
+            registerReceiver(cardIngestReceiver, filter)
+        }
         setContent {
             val launchIntent by launchIntentState
+            val cardsEpoch by cardsEpochState
             MaterialTheme {
                 WearShell {
                     StrawNfcWearApp(
                         prefs = prefs,
                         repository = repository,
                         launchIntent = launchIntent,
+                        cardsEpoch = cardsEpoch,
                     )
                 }
             }
         }
+    }
+
+    override fun onDestroy() {
+        runCatching { unregisterReceiver(cardIngestReceiver) }
+        super.onDestroy()
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -114,6 +135,7 @@ fun StrawNfcWearApp(
     prefs: Prefs,
     repository: CardRepository,
     launchIntent: Intent? = null,
+    cardsEpoch: Long = 0L,
 ) {
     var route by remember {
         mutableStateOf<WearRoute>(
@@ -179,6 +201,10 @@ fun StrawNfcWearApp(
         applyDeepLink(launchIntent)
     }
 
+    LaunchedEffect(cardsEpoch) {
+        if (cardsEpoch > 0L) refresh()
+    }
+
     when (val current = route) {
         WearRoute.Consent -> ConsentScreen(
             onAccept = {
@@ -210,7 +236,7 @@ fun StrawNfcWearApp(
                             updatedAtEpochMs = now,
                             favorite = false,
                             emulateStatus = EmulationCapability.DEVICE_UNSUPPORTED,
-                            notes = "手動 UID；僅備份，不宣稱可開門禁",
+                                notes = "手錶手動新增；僅備份，不宣稱可開門禁",
                         ),
                     )
                     refresh()

@@ -1,16 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">StrawNFC</string>
-    <string name="scan_title">掃描 NFC 卡</string>
+    <string name="scan_title">掃描並寫入手錶</string>
+    <string name="scan_subtitle">v%1$s · own_only · 靠近手機即自動寫入已配對手錶</string>
     <string name="scan_status_ready">請將自己擁有／已授權的卡片靠近手機背面</string>
     <string name="scan_nfc_unavailable">此裝置無 NFC 硬體</string>
-    <string name="scan_status_scanned">已掃描 %1$s · UID %2$s</string>
-    <string name="scan_sync_to_wear">同步到手錶</string>
-    <string name="scan_status_syncing">同步中…</string>
+    <string name="scan_status_scanned">已掃描 %1$s · UID %2$s · 正在寫入手錶…</string>
+    <string name="scan_name_label">卡片名稱</string>
+    <string name="scan_name_hint">例如：公司大門</string>
+    <string name="scan_write_to_wear">再次寫入手錶</string>
+    <string name="scan_sync_to_wear">寫入手錶</string>
+    <string name="scan_status_syncing">寫入手錶中…</string>
+    <string name="scan_status_written">已寫入手錶：%1$s</string>
     <string name="scan_status_synced">已送出 %1$s</string>
-    <string name="scan_status_sync_failed">同步失敗：%1$s</string>
-    <string name="scan_toast_synced">已寫入 Wear Data Layer</string>
-    <string name="open_scan">開始掃描</string>
+    <string name="scan_status_sync_failed">寫入失敗：%1$s</string>
+    <string name="scan_toast_written">已寫入手錶「%1$s」</string>
+    <string name="scan_toast_synced">已寫入手錶</string>
+    <string name="scan_detail_writing">掃描成功，正在透過 Wear 連線寫入…</string>
+    <string name="scan_detail_written_ok">已寫入。請在手錶 StrawNFC 卡片清單查看。</string>
+    <string name="open_scan">掃描並寫入手錶</string>
     <string name="open_backup">加密備份</string>
     <string name="backup_title">加密備份</string>
     <string name="backup_export">匯出 .strawnfc</string>

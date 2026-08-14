@@ -1,5 +1,6 @@
 package xyz.wastebase.strawnfc.sync
 
+import android.content.Intent
 import android.util.Log
 import com.google.android.gms.wearable.DataEvent
 import com.google.android.gms.wearable.DataEventBuffer
@@ -9,6 +10,7 @@ import xyz.wastebase.strawnfc.data.CardRepository
 
 /**
  * Wear receiver for phone → watch card sync on `/strawnfc/cards/{id}`.
+ * Persists to encrypted vault and notifies open UI to refresh.
  */
 class CardListenerService : WearableListenerService() {
     override fun onDataChanged(dataEvents: DataEventBuffer) {
@@ -30,6 +32,11 @@ class CardListenerService : WearableListenerService() {
                 }.getOrNull()
                 if (saved != null) {
                     Log.i(TAG, "upserted card id=${saved.id} type=${saved.type}")
+                    sendBroadcast(
+                        Intent(CardIngestEvents.ACTION_CARD_UPSERTED)
+                            .setPackage(packageName)
+                            .putExtra(CardIngestEvents.EXTRA_CARD_ID, saved.id),
+                    )
                 }
             }
         }

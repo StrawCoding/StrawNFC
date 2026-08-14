@@ -48,7 +48,7 @@ fun CardListScreen(
             }
             item {
                 Chip(
-                    label = { Text("新增 UID") },
+                    label = { Text("新增卡片") },
                     onClick = onAdd,
                     modifier = Modifier.fillMaxWidth(),
                     colors = ChipDefaults.primaryChipColors(),
@@ -63,10 +63,7 @@ fun CardListScreen(
             }
             if (cards.isEmpty()) {
                 item {
-                    Text("尚無卡片。可手動輸入 UID，或用手機 Companion 掃描後同步。")
-                }
-                item {
-                    Text("邊緣右滑：下一層返回；首頁再滑才會離開 App。")
+                    Text("尚無卡片。手機掃描會自動寫入，或在此手動新增。")
                 }
             } else {
                 items(cards, key = { it.id }) { card ->

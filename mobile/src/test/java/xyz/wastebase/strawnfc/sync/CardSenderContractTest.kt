@@ -29,4 +29,11 @@ class CardSenderContractTest {
         assertEquals(card.toJson(), CardSender.payloadJson(card))
         assertEquals(SyncPaths.KEY_CARD_JSON, "card_json")
     }
+
+    @Test
+    fun defaultCardName_usesUidTail() {
+        assertEquals("卡片 BEEF", CardSender.defaultCardName("DEADBEEF"))
+        assertEquals("掃描卡片", CardSender.defaultCardName(null))
+        assertEquals("掃描卡片", CardSender.defaultCardName(""))
+    }
 }
