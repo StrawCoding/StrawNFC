@@ -111,12 +111,12 @@ object NfcCardReader {
     }
 
     /**
-     * Classification precedence (honest MVP):
+     * Classification precedence (Task 7 / honest MVP):
      * 1) Explicit DESFire name → DESFIRE / PROTOCOL_UNSUPPORTED
-     * 2) MifareClassic → MIFARE_CLASSIC (no default-key tries)
-     * 3) NDEF payload → NDEF
-     * 4) IsoDep (no NDEF) → DESFIRE / PROTOCOL_UNSUPPORTED
-     * 5) else UID_ONLY / DEVICE_UNSUPPORTED (Stock HCE ≠ UID spoof)
+     * 2) IsoDep → DESFIRE / PROTOCOL_UNSUPPORTED（即使同時有 NDEF payload）
+     * 3) MifareClassic → MIFARE_CLASSIC（不自動嘗試預設金鑰）
+     * 4) NDEF payload（無 IsoDep／DESFire）→ NDEF
+     * 5) else UID_ONLY / DEVICE_UNSUPPORTED（Stock HCE ≠ UID spoof）
      */
     fun classify(techList: List<String>, hasNdefPayload: Boolean): CardClassification {
         val hasDesfireName = techList.any { tech ->
@@ -132,6 +132,12 @@ object NfcCardReader {
                 emulateStatus = EmulationCapability.PROTOCOL_UNSUPPORTED,
                 notes = NOTE_DESFIRE,
             )
+            // Task 7: tech 含 IsoDep → DESFIRE／PROTOCOL_UNSUPPORTED（優先於 NDEF）
+            hasIsoDep -> CardClassification(
+                type = CardType.DESFIRE,
+                emulateStatus = EmulationCapability.PROTOCOL_UNSUPPORTED,
+                notes = NOTE_DESFIRE,
+            )
             hasClassic -> CardClassification(
                 type = CardType.MIFARE_CLASSIC,
                 emulateStatus = EmulationCapability.PROTOCOL_UNSUPPORTED,
@@ -141,11 +147,6 @@ object NfcCardReader {
                 type = CardType.NDEF,
                 emulateStatus = EmulationCapability.UNKNOWN,
                 notes = NOTE_NDEF,
-            )
-            hasIsoDep -> CardClassification(
-                type = CardType.DESFIRE,
-                emulateStatus = EmulationCapability.PROTOCOL_UNSUPPORTED,
-                notes = NOTE_DESFIRE,
             )
             else -> CardClassification(
                 type = CardType.UID_ONLY,

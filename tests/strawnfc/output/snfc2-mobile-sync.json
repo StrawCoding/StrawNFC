@@ -3,13 +3,13 @@
   "stage": "snfc2-mobile-sync",
   "status": "PASS",
   "product": "StrawNFC",
-  "version": "0.1.0.5",
-  "generated_at": "2026-08-14T05:57:39Z",
+  "version": "0.1.0.6",
+  "generated_at": "2026-08-14T06:07:30Z",
   "package": "xyz.wastebase.strawnfc",
   "branch": "main",
   "remote": null,
   "push": "skipped_no_remote",
-  "base_git_head": "0c091bb1f095a35323026f3dc66ccc6b8609ddcd",
+  "base_git_head": "1a95d84a99ef65de8e32998941b3644ba2a2ac64",
   "tasks": [
     "Task7_mobile_nfc_scan_StoredCard",
     "Task8_wear_data_layer_sync"
@@ -20,7 +20,9 @@
     "desfire_emulate_status": "PROTOCOL_UNSUPPORTED",
     "desfire_cloneable": false,
     "stock_hce_equals_uid_clone": false,
-    "sync_path_prefix": "/strawnfc/cards"
+    "sync_path_prefix": "/strawnfc/cards",
+    "iso_dep_with_ndef_classifies_as": "DESFIRE",
+    "iso_dep_with_ndef_emulate_status": "PROTOCOL_UNSUPPORTED"
   },
   "artifacts": {
     "nfc_card_reader": "mobile/src/main/java/xyz/wastebase/strawnfc/nfc/NfcCardReader.kt",
@@ -41,11 +43,11 @@
     "assemble_mobile_debug": "PASS",
     "assemble_wear_debug": "PASS",
     "commands": [
-      "export ANDROID_HOME=/opt/android-sdk; ./gradlew :shared:test :mobile:testDebugUnitTest :wear:testDebugUnitTest :mobile:assembleDebug :wear:assembleDebug --no-daemon --rerun-tasks"
+      "export ANDROID_HOME=/opt/android-sdk; ./gradlew :shared:test :mobile:testDebugUnitTest :wear:testDebugUnitTest :mobile:assembleDebug :wear:assembleDebug --no-daemon"
     ],
     "counts": {
       "shared_sync_paths": 4,
-      "mobile_nfc_reader": 7,
+      "mobile_nfc_reader": 9,
       "mobile_sender_contract": 1,
       "wear_sync_ingest": 3
     }
@@ -53,10 +55,13 @@
   "failures": [],
   "notes": [
     "SNFC2 implements mobile NFC→StoredCard (Classic no default-key tries; DESFire→PROTOCOL_UNSUPPORTED) and Wear Data Layer sync path /strawnfc/cards/{id}",
+    "OpenCode REQUEST_CHANGES fix: IsoDep + NDEF payload now classifies as DESFIRE / PROTOCOL_UNSUPPORTED (Task 7 precedence; IsoDep before NDEF)",
+    "NDEF without IsoDep remains CardType.NDEF; IsoDep+NDEF still stores ndefPayloadBase64 for backup identity only",
     "Mock Tag via NfcScanSnapshot + CardSyncIngest unit tests (no key cracking / transit-payment clone)",
     "Worker evidence JSON status=PASS for Hermes trigger-verify; final mark PASS is Hermes/OpenCode only",
     "No git remote — local commits on main only",
     "git_head omitted to avoid self-hash recursion; use git rev-parse HEAD at verify time"
   ],
-  "evidence_base_commit": "0c091bb1f095a35323026f3dc66ccc6b8609ddcd"
+  "evidence_base_commit": "1a95d84a99ef65de8e32998941b3644ba2a2ac64",
+  "opencode_reviewer_fix": "iso_dep_plus_ndef_precedence"
 }

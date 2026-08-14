@@ -57,9 +57,21 @@ class NfcCardReaderTest {
     }
 
     @Test
-    fun classify_ndefPayload_preferredOverBareIsoDep() {
+    fun classify_isoDepWithNdefPayload_isDesfireProtocolUnsupported() {
+        // Task 7: IsoDep → DESFIRE／PROTOCOL_UNSUPPORTED，即使同時有 NDEF payload
         val c = NfcCardReader.classify(
             techList = listOf("android.nfc.tech.Ndef", "android.nfc.tech.IsoDep"),
+            hasNdefPayload = true,
+        )
+        assertEquals(CardType.DESFIRE, c.type)
+        assertEquals(EmulationCapability.PROTOCOL_UNSUPPORTED, c.emulateStatus)
+        assertTrue(c.notes!!.contains("無法也不應克隆"))
+    }
+
+    @Test
+    fun classify_ndefWithoutIsoDep_isNdef() {
+        val c = NfcCardReader.classify(
+            techList = listOf("android.nfc.tech.Ndef", "android.nfc.tech.NfcA"),
             hasNdefPayload = true,
         )
         assertEquals(CardType.NDEF, c.type)
@@ -89,6 +101,31 @@ class NfcCardReaderTest {
 
         val decoded = StoredCard.fromJson(card.toJson())
         assertEquals(card, decoded)
+    }
+
+    @Test
+    fun fromSnapshot_isoDepPlusNdef_classifiesDesfireKeepsPayload() {
+        val payload = "type4-or-desfire-ndef".toByteArray()
+        val card = NfcCardReader.fromSnapshot(
+            NfcScanSnapshot(
+                uidBytes = byteArrayOf(0x04, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66),
+                techList = listOf(
+                    "android.nfc.tech.IsoDep",
+                    "android.nfc.tech.Ndef",
+                    "android.nfc.tech.NfcA",
+                ),
+                atqaHex = "0344",
+                sakHex = "20",
+                ndefPayload = payload,
+            ),
+            name = "IsoDep+NDEF",
+            id = "iso-ndef-1",
+            nowMs = 99L,
+        )
+        assertEquals(CardType.DESFIRE, card.type)
+        assertEquals(EmulationCapability.PROTOCOL_UNSUPPORTED, card.emulateStatus)
+        assertEquals(Base64.getEncoder().encodeToString(payload), card.ndefPayloadBase64)
+        assertTrue(card.notes!!.contains("無法也不應克隆"))
     }
 
     @Test
