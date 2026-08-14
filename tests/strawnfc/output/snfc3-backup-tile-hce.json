@@ -3,13 +3,13 @@
   "stage": "snfc3-backup-tile-hce",
   "status": "PASS",
   "product": "StrawNFC",
-  "version": "0.1.0.8",
-  "generated_at": "2026-08-14T06:20:00Z",
+  "version": "0.1.0.9",
+  "generated_at": "2026-08-14T06:26:30Z",
   "package": "xyz.wastebase.strawnfc",
   "branch": "main",
   "remote": null,
   "push": "skipped_no_remote",
-  "base_git_head": "76f3aacddf200ce8ddd0e1acdda8f02c6a446f94",
+  "base_git_head": "d4f2c1f0458551a78086acaf201eb1cd1a5b97ce",
   "tasks": [
     "Task9_encrypted_backup_codec_roundtrip",
     "Task10_wear_tile_and_favorite_complication",
@@ -52,8 +52,10 @@
     "wear_unit_test": "PASS",
     "assemble_mobile_debug": "PASS",
     "assemble_wear_debug": "PASS",
+    "pipeline_script": "PASS",
     "commands": [
-      "export ANDROID_HOME=/opt/android-sdk; ./gradlew :shared:test :mobile:testDebugUnitTest :wear:testDebugUnitTest :mobile:assembleDebug :wear:assembleDebug --no-daemon"
+      "export ANDROID_HOME=/opt/android-sdk; ./gradlew :shared:test :mobile:testDebugUnitTest :wear:testDebugUnitTest :mobile:assembleDebug :wear:assembleDebug --no-daemon",
+      "bash /root/.hermes/scripts/pipelines/strawnfc-snfc3-backup-tile-hce.sh"
     ],
     "counts": {
       "shared_backup_codec": 8,
@@ -73,9 +75,10 @@
     "Wear Tile + Favorite Complication open Emulate prepare screen (never claim door unlocked)",
     "CapabilityProbe + StrawHostApduService NDEF Type4 AID D2760000850101; APDU unit tests PASS",
     "UID/Classic/DESFire Emulate UI honest DEVICE_UNSUPPORTED or PROTOCOL_UNSUPPORTED; capability-matrix updated",
-    "Worker evidence JSON status=PASS for Hermes trigger-verify; final mark PASS is Hermes/OpenCode only",
+    "Recovery: earlier Hermes pipeline failed 5x on mid-write WIP (missing mobile backup_* strings + wear tiles/complication deps before commit). Post-commit HEAD builds clean.",
+    "Worker local verify PASS; final stage mark PASS is Hermes trigger-verify + OpenCode only",
     "No git remote — local commits on main only",
     "git_head omitted to avoid self-hash recursion; use git rev-parse HEAD at verify time"
   ],
-  "evidence_base_commit": "76f3aacddf200ce8ddd0e1acdda8f02c6a446f94"
+  "evidence_base_commit": "d4f2c1f0458551a78086acaf201eb1cd1a5b97ce"
 }
