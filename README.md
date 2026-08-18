@@ -42,5 +42,5 @@ Play 內部測試上架（signing → signed AAB → Fastlane `internal_testing`
 |------|------|------|------|
 | UID-only | 手機／手動 | 是 | 機型依賴；Stock HCE 通常不可改 UID |
 | MIFARE Classic | 手機（使用者自備金鑰） | 是 | 多數不可 → unsupported |
-| NDEF | 手機 | 是 | Type 4 HCE（優先可行路徑） |
+| NDEF | 手機／手錶 | 是 | Type 4 HCE（僅 Type 2 來源、payload ≤ 2048 bytes） |
 | DESFire | 僅識別摘要 | 是（標記） | **不可克隆** |

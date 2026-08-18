@@ -74,6 +74,9 @@ object NfcModeController {
             val preferred = setPreferredService(activity)
             if (!preferred) {
                 Log.w(TAG, "setPreferredService failed or unsupported; session still active")
+                Log.w("StrawNFC-HCE", "preferred HCE routing failed; AID may not reach HostApduService")
+            } else {
+                Log.d("StrawNFC-HCE", "preferred HCE routing requested for $cardId")
             }
             mode = NfcWorkMode.HCE
             EnterResult.Ok

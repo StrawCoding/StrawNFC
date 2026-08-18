@@ -180,7 +180,7 @@ object NfcCardReader {
     const val NOTE_CLASSIC =
         "MIFARE Classic：僅記錄 UID／類型（unsupported_emulate）；不自動嘗試預設金鑰。金鑰需使用者自行提供（二期）。"
     const val NOTE_NDEF =
-        "已讀取 NDEF payload；手錶可走 Type 4 HCE（CapabilityProbe 通過後）。讀到 NDEF ≠ 門禁已開。"
+        "已讀取 NDEF payload。手錶模擬的是 Type 4 Tag APDU，不是「有 NDEF 就自動變成標籤」。讀到 NDEF ≠ 門禁已開。"
     const val NOTE_UID =
         "UID-only：Stock HCE 通常無法改寫對外 UID；此裝置無法模擬此門禁。僅備份，不宣稱可開門禁。"
 }

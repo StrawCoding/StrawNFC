@@ -1,4 +1,4 @@
-# StrawNFC — minimal CI gate (assemble + shared unit tests)
+# StrawNFC — CI gate (assemble + unit tests for every module)
 name: android-ci
 
 on:
@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   build-and-test:
-    name: shared-test + assembleDebug
+    name: unit tests (shared/wear/mobile) + assembleDebug
     runs-on: ubuntu-latest
     timeout-minutes: 45
 
@@ -35,8 +35,10 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Shared unit tests
-        run: ./gradlew :shared:test --no-daemon --stacktrace
+      # Wear/mobile tests cover HCE capability, emulate UI order and sync ingest —
+      # a shared-only gate let those regress unnoticed.
+      - name: Unit tests (shared + wear + mobile)
+        run: ./gradlew :shared:test :wear:testDebugUnitTest :mobile:testDebugUnitTest --no-daemon --stacktrace
 
       - name: Assemble Wear + Mobile debug APKs
         run: ./gradlew :wear:assembleDebug :mobile:assembleDebug --no-daemon --stacktrace

@@ -55,7 +55,10 @@ object CapabilityProbe {
             CardType.UNKNOWN -> EmulationCapability.PROTOCOL_UNSUPPORTED
             CardType.NDEF -> {
                 when {
-                    card.ndefPayloadBase64.isNullOrBlank() -> EmulationCapability.PROTOCOL_UNSUPPORTED
+                    // Payload must actually fit a Type 4 NDEF file, else the service
+                    // would answer 6985 while the UI shows a live session.
+                    !Type4Payload.isEmulatable(card.ndefPayloadBase64) ->
+                        EmulationCapability.PROTOCOL_UNSUPPORTED
                     !probe.canAttemptType4Ndef -> EmulationCapability.DEVICE_UNSUPPORTED
                     else -> EmulationCapability.SUPPORTED
                 }
@@ -65,7 +68,7 @@ object CapabilityProbe {
 
     fun honestStatusHeadline(status: EmulationCapability): String =
         when (status) {
-            EmulationCapability.SUPPORTED -> "可嘗試 Type 4 NDEF 模擬"
+            EmulationCapability.SUPPORTED -> "可進行 Type 4 NDEF 模擬"
             EmulationCapability.DEVICE_UNSUPPORTED -> "此裝置無法模擬此門禁"
             EmulationCapability.PROTOCOL_UNSUPPORTED -> "協定不支援模擬（僅備份）"
             EmulationCapability.UNKNOWN -> "尚未完成能力探測"
@@ -73,7 +76,7 @@ object CapabilityProbe {
 
     fun honestActionLabel(status: EmulationCapability): String =
         when (status) {
-            EmulationCapability.SUPPORTED -> "準備 NDEF 模擬"
+            EmulationCapability.SUPPORTED -> "開始模擬"
             else -> "僅備份 — 無法模擬"
         }
 }

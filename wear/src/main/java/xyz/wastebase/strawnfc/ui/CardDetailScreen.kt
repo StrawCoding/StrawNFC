@@ -1,18 +1,14 @@
 package xyz.wastebase.strawnfc.ui
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-import androidx.wear.compose.material.Button
+import androidx.compose.ui.text.style.TextAlign
+import androidx.wear.compose.material.Chip
+import androidx.wear.compose.material.ChipDefaults
+import androidx.wear.compose.material.CompactChip
+import androidx.wear.compose.material.ListHeader
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
 import xyz.wastebase.strawnfc.model.CardType
@@ -27,41 +23,96 @@ fun CardDetailScreen(
     onDelete: () -> Unit,
     onBack: () -> Unit,
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 12.dp, vertical = 16.dp),
-        verticalArrangement = Arrangement.Top,
-    ) {
-        Text(card.name, style = MaterialTheme.typography.title3)
-        Spacer(Modifier.height(6.dp))
-        Text("類型：${card.type}", style = MaterialTheme.typography.body2)
-        Text("UID：${card.uidHex ?: "—"}", style = MaterialTheme.typography.body2)
-        Text("模擬：${honestEmulateLabel(card)}", style = MaterialTheme.typography.caption1)
-        Spacer(Modifier.height(6.dp))
-        Text(honestCapabilityNote(card), style = MaterialTheme.typography.caption2)
-        card.notes?.takeIf { it.isNotBlank() }?.let {
-            Spacer(Modifier.height(4.dp))
-            Text(it, style = MaterialTheme.typography.caption3)
-        }
-        Spacer(Modifier.height(10.dp))
-        Button(onClick = onEmulate, modifier = Modifier.fillMaxWidth()) {
-            Text("準備模擬")
-        }
-        Spacer(Modifier.height(4.dp))
-        Button(onClick = onToggleFavorite, modifier = Modifier.fillMaxWidth()) {
-            Text(if (card.favorite) "取消最愛" else "設為最愛")
-        }
-        Spacer(Modifier.height(4.dp))
-        Button(onClick = onDelete, modifier = Modifier.fillMaxWidth()) {
-            Text("刪除")
-        }
-        Spacer(Modifier.height(4.dp))
-        Button(onClick = onBack, modifier = Modifier.fillMaxWidth()) {
-            Text("返回")
+    WearScrollScaffold {
+        detailBlocks(hasNotes = !card.notes.isNullOrBlank()).forEach { block ->
+            item(key = block.name) {
+                when (block) {
+                    DetailBlock.TITLE -> ListHeader {
+                        Text(
+                            text = card.name,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                    DetailBlock.META -> Column(modifier = Modifier.fillMaxWidth()) {
+                        Text(
+                            "類型：${card.type}",
+                            style = MaterialTheme.typography.body2,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        Text(
+                            "UID：${card.uidHex ?: "—"}",
+                            style = MaterialTheme.typography.body2,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        Text(
+                            "模擬：${honestEmulateLabel(card)}",
+                            style = MaterialTheme.typography.caption1,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                    DetailBlock.EMULATE -> Chip(
+                        onClick = onEmulate,
+                        label = { Text("準備模擬") },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ChipDefaults.primaryChipColors(),
+                    )
+                    DetailBlock.FAVORITE -> CompactChip(
+                        onClick = onToggleFavorite,
+                        label = { Text(if (card.favorite) "取消最愛" else "設為最愛") },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    DetailBlock.HONESTY -> Text(
+                        text = honestCapabilityNote(card),
+                        style = MaterialTheme.typography.caption2,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    DetailBlock.NOTES -> Text(
+                        text = card.notes.orEmpty(),
+                        style = MaterialTheme.typography.caption3,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    DetailBlock.DELETE -> CompactChip(
+                        onClick = onDelete,
+                        label = { Text("刪除") },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    DetailBlock.BACK -> CompactChip(
+                        onClick = onBack,
+                        label = { Text("返回") },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            }
         }
     }
+}
+
+enum class DetailBlock {
+    TITLE,
+    META,
+    EMULATE,
+    FAVORITE,
+    HONESTY,
+    NOTES,
+    DELETE,
+    BACK,
+}
+
+fun detailBlocks(hasNotes: Boolean): List<DetailBlock> = buildList {
+    add(DetailBlock.TITLE)
+    add(DetailBlock.META)
+    add(DetailBlock.EMULATE)
+    add(DetailBlock.FAVORITE)
+    add(DetailBlock.HONESTY)
+    if (hasNotes) add(DetailBlock.NOTES)
+    add(DetailBlock.DELETE)
+    add(DetailBlock.BACK)
 }
 
 fun honestEmulateLabel(card: StoredCard): String =
@@ -81,7 +132,7 @@ fun honestCapabilityNote(card: StoredCard): String =
         CardType.UID_ONLY ->
             "Stock HCE 通常無法改寫對外 UID；僅備份＋能力探測，不宣稱可開門禁。"
         CardType.NDEF ->
-            "NDEF 可走 Type 4 HCE（能力探測通過後啟用）。讀到 NDEF ≠ 門禁已開。"
+            "NDEF payload 可走 Type 4 Tag 模擬（HCE＋AID＋CC／NDEF File 齊才算）。讀到 NDEF ≠ 門禁已開。"
         CardType.UNKNOWN ->
             "未知類型：僅儲存，不宣稱可模擬。"
     }

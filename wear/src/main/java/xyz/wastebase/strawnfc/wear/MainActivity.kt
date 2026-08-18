@@ -20,11 +20,14 @@ import androidx.compose.ui.Modifier
 import androidx.wear.compose.foundation.BasicSwipeToDismissBox
 import androidx.wear.compose.foundation.rememberSwipeToDismissBoxState
 import androidx.wear.compose.material.MaterialTheme
+import kotlinx.coroutines.delay
 import xyz.wastebase.strawnfc.backup.BackupCodec
 import xyz.wastebase.strawnfc.data.CardRepository
 import xyz.wastebase.strawnfc.data.Prefs
 import xyz.wastebase.strawnfc.hce.CapabilityProbe
 import xyz.wastebase.strawnfc.hce.StrawHostApduService
+import xyz.wastebase.strawnfc.hce.Type4NdefApduHandler
+import xyz.wastebase.strawnfc.hce.Type4Payload
 import xyz.wastebase.strawnfc.model.StoredCard
 import xyz.wastebase.strawnfc.nfc.NfcModeController
 import xyz.wastebase.strawnfc.ui.AddCardScreen
@@ -321,6 +324,18 @@ fun StrawNfcWearApp(
                     mutableStateOf(NfcModeController.adapterEnabled(context))
                 }
                 var controlMessage by remember(card.id) { mutableStateOf<String?>(null) }
+                var apduLogLines by remember(card.id) { mutableStateOf<List<String>>(emptyList()) }
+                val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+                // Returning from system NFC settings must clear the stale "NFC off" state.
+                androidx.compose.runtime.DisposableEffect(lifecycleOwner, card.id) {
+                    val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+                        if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+                            nfcEnabled = NfcModeController.adapterEnabled(context)
+                        }
+                    }
+                    lifecycleOwner.lifecycle.addObserver(observer)
+                    onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+                }
                 LaunchedEffect(card.id, status) {
                     if (card.emulateStatus != status) {
                         repository.upsert(
@@ -330,6 +345,16 @@ fun StrawNfcWearApp(
                             ),
                         )
                         refresh()
+                    }
+                }
+                LaunchedEffect(sessionActive, card.id) {
+                    if (!sessionActive) {
+                        apduLogLines = emptyList()
+                        return@LaunchedEffect
+                    }
+                    while (true) {
+                        apduLogLines = StrawHostApduService.snapshotApduLog()
+                        delay(400)
                     }
                 }
                 NestedSwipeScreen(
@@ -349,9 +374,14 @@ fun StrawNfcWearApp(
                         sessionActive = sessionActive,
                         nfcEnabled = nfcEnabled,
                         controlMessage = controlMessage,
+                        apduLogLines = apduLogLines,
                         onStartNdefSession = {
                             val payload = card.ndefPayloadBase64
-                            if (payload.isNullOrBlank()) return@EmulateScreen
+                            if (payload == null || !Type4Payload.isEmulatable(payload)) {
+                                controlMessage = "NDEF 內容無法組成 Type 4 檔案（空白／損壞／超過 " +
+                                    "${Type4NdefApduHandler.MAX_NDEF_PAYLOAD} bytes），不啟動模擬。"
+                                return@EmulateScreen
+                            }
                             nfcEnabled = NfcModeController.adapterEnabled(context)
                             if (activity == null) {
                                 controlMessage = "無法取得 Activity，無法設定偏好 HCE。"
@@ -367,7 +397,7 @@ fun StrawNfcWearApp(
                             ) {
                                 NfcModeController.EnterResult.Ok -> {
                                     sessionActive = true
-                                    controlMessage = "已啟動 NDEF 模擬並請求偏好路由（讀卡已暫停）。"
+                                    controlMessage = "已啟動 Type 4 NDEF 模擬並請求偏好路由。看下方 APDU：有 SELECT 表示 routing 成功。"
                                 }
                                 NfcModeController.EnterResult.NfcOff -> {
                                     sessionActive = false

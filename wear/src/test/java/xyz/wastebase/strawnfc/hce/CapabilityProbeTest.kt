@@ -77,6 +77,24 @@ class CapabilityProbeTest {
     }
 
     @Test
+    fun ndef_payloadTooLargeForType4File_protocolUnsupported() {
+        val tooBig = java.util.Base64.getEncoder()
+            .encodeToString(ByteArray(Type4NdefApduHandler.MAX_NDEF_PAYLOAD + 1))
+        assertEquals(
+            EmulationCapability.PROTOCOL_UNSUPPORTED,
+            CapabilityProbe.resolveEmulateStatus(card(CardType.NDEF, ndef = tooBig), hceReady),
+        )
+    }
+
+    @Test
+    fun ndef_malformedBase64_protocolUnsupported() {
+        assertEquals(
+            EmulationCapability.PROTOCOL_UNSUPPORTED,
+            CapabilityProbe.resolveEmulateStatus(card(CardType.NDEF, ndef = "!!!nope!!!"), hceReady),
+        )
+    }
+
+    @Test
     fun probeResult_canAttemptType4() {
         assertTrue(hceReady.canAttemptType4Ndef)
         assertFalse(noHce.canAttemptType4Ndef)
@@ -90,5 +108,7 @@ class CapabilityProbeTest {
             assertFalse(t.contains("已開門"))
             assertFalse(t.contains("unlocked", ignoreCase = true))
         }
+        assertEquals("可進行 Type 4 NDEF 模擬", CapabilityProbe.honestStatusHeadline(EmulationCapability.SUPPORTED))
+        assertEquals("開始模擬", CapabilityProbe.honestActionLabel(EmulationCapability.SUPPORTED))
     }
 }
